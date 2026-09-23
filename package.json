@@ -10,7 +10,9 @@
     "typecheck": "tsc --noEmit",
     "test:unit": "vitest run --project unit",
     "test:int": "vitest run --project integration",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "env:local": "node scripts/write-local-env.mjs",
+    "db:types": "supabase gen types typescript --local > src/lib/supabase/database.types.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.1",
