@@ -1,8 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toggle, type CatalogFilters } from '@/lib/filters';
 import type { GenreRef } from '@/lib/queries/types';
+
+const YEAR_ERROR = 'Informe um ano entre 1870 e 2100';
 
 const LANGUAGES: [string, string][] = [
   ['en', 'Inglês'],
@@ -36,6 +38,10 @@ function numberOrNull(value: string): number | null {
   return value === '' ? null : Number(value);
 }
 
+function isValidYear(value: number | null): boolean {
+  return value === null || (Number.isInteger(value) && value >= 1870 && value <= 2100);
+}
+
 function DrawerBody({ filters, genres, onClose, onApply }: Omit<Props, 'open'>) {
   const [draft, setDraft] = useState<Extra>({
     genres: filters.genres,
@@ -45,20 +51,42 @@ function DrawerBody({ filters, genres, onClose, onApply }: Omit<Props, 'open'>) 
     maxRuntime: filters.maxRuntime,
     language: filters.language,
   });
+  const [yearError, setYearError] = useState<string | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const set = (patch: Partial<Extra>) => setDraft((d) => ({ ...d, ...patch }));
   const field = 'mt-1 w-full rounded-md border border-border bg-surface px-2 py-1.5';
 
+  // Ao abrir, o foco vai para o painel; Esc funciona mesmo se o foco estiver num campo interno.
+  useEffect(() => {
+    panelRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose();
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
+  const handleApply = () => {
+    if (!isValidYear(draft.yearMin) || !isValidYear(draft.yearMax)) {
+      setYearError(YEAR_ERROR);
+      return;
+    }
+    setYearError(null);
+    onApply(draft);
+  };
+
   return (
-    <div
-      className="fixed inset-0 z-50 flex justify-end bg-black/60"
-      onClick={onClose}
-      onKeyDown={(e) => e.key === 'Escape' && onClose()}
-    >
+    <div className="fixed inset-0 z-50 flex justify-end bg-black/60" onClick={onClose}>
       <div
+        ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-label="Mais filtros"
-        className="h-full w-full space-y-5 overflow-y-auto bg-surface-2 p-5 sm:max-w-sm"
+        tabIndex={-1}
+        className="h-full w-full space-y-5 overflow-y-auto bg-surface-2 p-5 outline-none sm:max-w-sm"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
@@ -98,8 +126,14 @@ function DrawerBody({ filters, genres, onClose, onApply }: Omit<Props, 'open'>) 
               inputMode="numeric"
               min={1870}
               max={2100}
+              step={1}
               value={draft.yearMin ?? ''}
-              onChange={(e) => set({ yearMin: numberOrNull(e.target.value) })}
+              onChange={(e) => {
+                set({ yearMin: numberOrNull(e.target.value) });
+                setYearError(null);
+              }}
+              aria-invalid={yearError ? true : undefined}
+              aria-describedby={yearError ? 'ano-error' : undefined}
               className={field}
             />
           </label>
@@ -110,12 +144,23 @@ function DrawerBody({ filters, genres, onClose, onApply }: Omit<Props, 'open'>) 
               inputMode="numeric"
               min={1870}
               max={2100}
+              step={1}
               value={draft.yearMax ?? ''}
-              onChange={(e) => set({ yearMax: numberOrNull(e.target.value) })}
+              onChange={(e) => {
+                set({ yearMax: numberOrNull(e.target.value) });
+                setYearError(null);
+              }}
+              aria-invalid={yearError ? true : undefined}
+              aria-describedby={yearError ? 'ano-error' : undefined}
               className={field}
             />
           </label>
         </div>
+        {yearError && (
+          <p id="ano-error" role="alert" className="-mt-3 text-sm text-red-400">
+            {yearError}
+          </p>
+        )}
 
         <label className="block text-sm">
           Nota mínima
@@ -164,14 +209,17 @@ function DrawerBody({ filters, genres, onClose, onApply }: Omit<Props, 'open'>) 
         <div className="flex gap-3 pt-2">
           <button
             type="button"
-            onClick={() => setDraft(EMPTY)}
+            onClick={() => {
+              setDraft(EMPTY);
+              setYearError(null);
+            }}
             className="flex-1 rounded-md border border-border px-4 py-2 text-sm"
           >
             Limpar
           </button>
           <button
             type="button"
-            onClick={() => onApply(draft)}
+            onClick={handleApply}
             className="flex-1 rounded-md bg-accent px-4 py-2 text-sm font-semibold text-black"
           >
             Aplicar

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { countExtraFilters, type CatalogFilters } from '@/lib/filters';
 import type { GenreRef, ProviderRef } from '@/lib/queries/types';
 import { AccessTypeChips } from './AccessTypeChips';
@@ -18,6 +18,13 @@ export function CatalogControls({ filters, providers, genres }: Props) {
   const navigate = useFilterNavigation(filters);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const extra = countExtraFilters(filters);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  const closeDrawer = () => {
+    setDrawerOpen(false);
+    // Devolve o foco ao gatilho ao fechar (Fechar, Escape, clique fora ou Aplicar).
+    triggerRef.current?.focus();
+  };
 
   return (
     <section className="space-y-3">
@@ -25,7 +32,10 @@ export function CatalogControls({ filters, providers, genres }: Props) {
       <div className="flex flex-wrap items-center gap-2">
         <AccessTypeChips selected={filters.access} onChange={(access) => navigate({ access })} />
         <button
+          ref={triggerRef}
           type="button"
+          aria-haspopup="dialog"
+          aria-expanded={drawerOpen}
           onClick={() => setDrawerOpen(true)}
           className="rounded-full border border-border bg-surface px-3 py-1 text-sm"
         >
@@ -36,9 +46,9 @@ export function CatalogControls({ filters, providers, genres }: Props) {
         open={drawerOpen}
         filters={filters}
         genres={genres}
-        onClose={() => setDrawerOpen(false)}
+        onClose={closeDrawer}
         onApply={(patch) => {
-          setDrawerOpen(false);
+          closeDrawer();
           navigate(patch);
         }}
       />

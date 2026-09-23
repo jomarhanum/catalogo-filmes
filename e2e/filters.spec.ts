@@ -48,3 +48,25 @@ test('ordenar por A–Z', async ({ page }) => {
   await expect(page).toHaveURL('/?ordem=az');
   await expect(page.getByTestId('movie-card').first()).toContainText('Bacurau');
 });
+
+test('gaveta: Escape fecha e devolve o foco ao gatilho', async ({ page }) => {
+  await page.goto('/');
+  const trigger = page.getByRole('button', { name: 'Mais filtros' });
+  await trigger.click();
+  const drawer = page.getByRole('dialog', { name: 'Mais filtros' });
+  await expect(drawer).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(drawer).toHaveCount(0);
+  await expect(trigger).toBeFocused();
+});
+
+test('gaveta: ano inválido mostra erro e não aplica', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Mais filtros' }).click();
+  const drawer = page.getByRole('dialog', { name: 'Mais filtros' });
+  await drawer.getByLabel('Ano (de)').fill('50');
+  await drawer.getByRole('button', { name: 'Aplicar' }).click();
+  await expect(drawer.getByText('Informe um ano entre 1870 e 2100')).toBeVisible();
+  await expect(drawer).toBeVisible();
+  await expect(page).toHaveURL('/');
+});
