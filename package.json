@@ -12,7 +12,8 @@
     "test:int": "vitest run --project integration",
     "test:e2e": "playwright test",
     "env:local": "node scripts/write-local-env.mjs",
-    "db:types": "supabase gen types typescript --local > src/lib/supabase/database.types.ts"
+    "db:types": "supabase gen types typescript --local > src/lib/supabase/database.types.ts",
+    "sync": "node --env-file-if-exists=.env.local --import tsx sync/main.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.1",
