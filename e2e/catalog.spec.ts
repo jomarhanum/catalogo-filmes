@@ -7,7 +7,7 @@ test('mostra os primeiros 24 filmes e carrega o resto', async ({ page }) => {
   await expect(cards).toHaveCount(24);
   await expect(cards.first()).toContainText('Mad Max: Estrada da Fúria');
   await expect(cards.first()).toContainText('2015 · 2h');
-  await expect(cards.first()).toContainText('★ 7.6');
+  await expect(cards.first()).toContainText('★ 7,6');
 
   await page.getByRole('button', { name: 'Carregar mais' }).click();
   await expect(cards).toHaveCount(38);

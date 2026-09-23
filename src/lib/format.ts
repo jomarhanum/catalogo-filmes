@@ -11,6 +11,12 @@ export function formatRuntime(minutes: number | null): string | null {
   return `${hours}h${String(rest).padStart(2, '0')}`;
 }
 
+const ratingFormat = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
 export function formatRating(value: number): string {
-  return value.toFixed(1);
+  return ratingFormat.format(value);
+}
+
+export function formatMovieCount(total: number): string {
+  return `${total.toLocaleString('pt-BR')} ${total === 1 ? 'filme' : 'filmes'}`;
 }
