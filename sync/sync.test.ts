@@ -102,4 +102,38 @@ describe('runSync', () => {
     expect(summary.added).toBe(1);
     expect([...repo.links.keys()].sort()).toEqual(['1:119:rent', '1:8:flatrate']);
   });
+
+  it('filme sem nenhum streaming não tem os detalhes renovados', async () => {
+    tmdb.catalog.set('8:flatrate', [tmdbMovie(1), tmdbMovie(2)]);
+    await runSync({ tmdb, repo, now: at(0) });
+    tmdb.catalog.set('8:flatrate', [tmdbMovie(1)]);
+    await runSync({ tmdb, repo, now: at(1) });
+    expect([...repo.links.keys()]).toEqual(['1:8:flatrate']);
+    tmdb.detailCalls = [];
+
+    await runSync({ tmdb, repo, now: at(31) });
+    expect(tmdb.detailCalls).toEqual([1]);
+  });
+
+  it('aborta a limpeza se a maioria das ligações sumir de uma vez', async () => {
+    const ids = Array.from({ length: 150 }, (_, i) => i + 1);
+    tmdb.catalog.set('8:flatrate', ids.map((id) => tmdbMovie(id)));
+    await runSync({ tmdb, repo, now: at(0) });
+    expect(repo.links.size).toBe(150);
+
+    tmdb.catalog.set('8:flatrate', ids.slice(0, 10).map((id) => tmdbMovie(id)));
+    await expect(runSync({ tmdb, repo, now: at(1) })).rejects.toThrow(/140 de 150/);
+    expect(repo.links.size).toBe(150);
+  });
+
+  it('remoções pequenas num catálogo grande seguem normais', async () => {
+    const ids = Array.from({ length: 150 }, (_, i) => i + 1);
+    tmdb.catalog.set('8:flatrate', ids.map((id) => tmdbMovie(id)));
+    await runSync({ tmdb, repo, now: at(0) });
+
+    tmdb.catalog.set('8:flatrate', ids.slice(0, 130).map((id) => tmdbMovie(id)));
+    const summary = await runSync({ tmdb, repo, now: at(1) });
+    expect(summary.unlinked).toBe(20);
+    expect(repo.links.size).toBe(130);
+  });
 });

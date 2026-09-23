@@ -7,6 +7,11 @@ import { pickTrailer } from './trailer';
 
 const DETAILS_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
+/** A limpeza é abortada se fosse remover mais que esta fração das ligações... */
+const MAX_UNLINK_RATIO = 0.3;
+/** ...e também mais que esta quantidade (remoções pequenas sempre passam). */
+const MAX_UNLINK_COUNT = 100;
+
 export interface SyncSummary {
   added: number;
   updated: number;
@@ -122,7 +127,16 @@ export async function runSync(deps: SyncDeps): Promise<SyncSummary> {
     }
   });
 
-  // 4. Limpeza — só chega aqui se nada acima falhou
+  // 4. Limpeza — só chega aqui se nada acima falhou.
+  // Trava de segurança: se a varredura voltou vazia demais (ex.: TMDB respondendo listas
+  // incompletas), apagar deixaria o site sem filmes. Melhor falhar o job e avisar o dono.
+  const links = await repo.countMovieProviders(runStartedAt);
+  if (links.stale > MAX_UNLINK_COUNT && links.stale > links.total * MAX_UNLINK_RATIO) {
+    throw new Error(
+      `Limpeza abortada: ${links.stale} de ${links.total} ligações de streaming seriam removidas ` +
+        `(mais de ${MAX_UNLINK_RATIO * 100}% e de ${MAX_UNLINK_COUNT}). Nada foi apagado; verifique a varredura do TMDB.`,
+    );
+  }
   summary.unlinked = await repo.deleteStaleMovieProviders(runStartedAt);
 
   // 5. Resumo

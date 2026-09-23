@@ -44,6 +44,13 @@ export interface MovieDetailsUpdate {
   details_synced_at: string;
 }
 
+export interface MovieProviderCounts {
+  /** Todas as ligações filme–streaming. */
+  total: number;
+  /** Ligações com last_seen_at anterior ao corte (as que a limpeza apagaria). */
+  stale: number;
+}
+
 export interface CatalogRepository {
   upsertProviders(rows: ProviderRow[]): Promise<void>;
   upsertGenres(rows: GenreRow[]): Promise<void>;
@@ -51,7 +58,9 @@ export interface CatalogRepository {
   upsertMovies(rows: MovieRow[]): Promise<void>;
   upsertMovieGenres(rows: MovieGenreRow[]): Promise<void>;
   touchMovieProviders(rows: MovieProviderRow[], seenAt: string): Promise<void>;
+  /** Filmes com ao menos um streaming e detalhes ausentes ou anteriores ao corte. */
   listMoviesNeedingDetails(staleBefore: string): Promise<number[]>;
   updateMovieDetails(id: number, update: MovieDetailsUpdate): Promise<void>;
+  countMovieProviders(staleBefore: string): Promise<MovieProviderCounts>;
   deleteStaleMovieProviders(before: string): Promise<number>;
 }

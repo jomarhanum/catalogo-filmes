@@ -53,7 +53,9 @@ export class MemoryRepository implements CatalogRepository {
   }
 
   async listMoviesNeedingDetails(staleBefore: string) {
+    const linked = new Set([...this.links.values()].map((link) => link.movie_id));
     return [...this.movies.values()]
+      .filter((m) => linked.has(m.id))
       .filter((m) => !m.details_synced_at || m.details_synced_at < staleBefore)
       .map((m) => m.id)
       .sort((a, b) => a - b);
@@ -62,6 +64,11 @@ export class MemoryRepository implements CatalogRepository {
   async updateMovieDetails(id: number, update: MovieDetailsUpdate) {
     const movie = this.movies.get(id);
     if (movie) this.movies.set(id, { ...movie, ...update });
+  }
+
+  async countMovieProviders(staleBefore: string) {
+    const links = [...this.links.values()];
+    return { total: links.length, stale: links.filter((link) => link.last_seen_at < staleBefore).length };
   }
 
   async deleteStaleMovieProviders(before: string) {

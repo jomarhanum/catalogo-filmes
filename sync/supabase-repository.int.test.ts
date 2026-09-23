@@ -41,12 +41,30 @@ describe('createSupabaseRepository', () => {
     await repo.upsertMovieGenres([{ movie_id: MOVIE, genre_id: GENRE }]);
     await repo.upsertMovieGenres([{ movie_id: MOVIE, genre_id: GENRE }]);
 
+    // Sem nenhum streaming o filme nunca aparece: não precisa de detalhes.
+    expect(await repo.listMoviesNeedingDetails('2026-01-01T00:00:00.000Z')).not.toContain(MOVIE);
+    const before = await repo.countMovieProviders('2026-01-01T00:00:01.000Z');
+
     await repo.touchMovieProviders(
-      [{ movie_id: MOVIE, provider_id: PROVIDER, access_type: 'flatrate' }],
+      [
+        { movie_id: MOVIE, provider_id: PROVIDER, access_type: 'flatrate' },
+        { movie_id: MOVIE, provider_id: PROVIDER, access_type: 'rent' },
+      ],
       '2026-01-01T00:00:00.000Z',
     );
 
-    expect(await repo.listMoviesNeedingDetails('2026-01-01T00:00:00.000Z')).toContain(MOVIE);
+    expect(await repo.countMovieProviders('2026-01-01T00:00:01.000Z')).toEqual({
+      total: before.total + 2,
+      stale: before.stale + 2,
+    });
+    expect(await repo.countMovieProviders('2026-01-01T00:00:00.000Z')).toEqual({
+      total: before.total + 2,
+      stale: before.stale,
+    });
+
+    const needing = await repo.listMoviesNeedingDetails('2026-01-01T00:00:00.000Z');
+    expect(needing).toContain(MOVIE);
+    expect(new Set(needing).size).toBe(needing.length);
     await repo.updateMovieDetails(MOVIE, {
       runtime: 100,
       backdrop_path: '/b.jpg',
@@ -60,6 +78,6 @@ describe('createSupabaseRepository', () => {
     expect(data).toEqual({ title: 'Novo Título', runtime: 100, trailer_key: 'k', vote_average: 7.3 });
 
     expect(await repo.deleteStaleMovieProviders('2026-01-01T00:00:00.000Z')).toBe(0);
-    expect(await repo.deleteStaleMovieProviders('2026-01-01T00:00:01.000Z')).toBe(1);
+    expect(await repo.deleteStaleMovieProviders('2026-01-01T00:00:01.000Z')).toBe(2);
   });
 });

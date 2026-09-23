@@ -51,23 +51,34 @@ export function createSupabaseRepository(db: SupabaseClient<Database>): CatalogR
     },
 
     async listMoviesNeedingDetails(staleBefore) {
-      const ids: number[] = [];
+      // O !inner deixa só filmes com ao menos uma ligação de streaming (os outros não aparecem no site).
+      const ids = new Set<number>();
       for (let from = 0; ; from += PAGE) {
         const { data, error } = await db
           .from('movies')
-          .select('id')
+          .select('id, movie_providers!inner(movie_id)')
           .or(`details_synced_at.is.null,details_synced_at.lt."${staleBefore}"`)
           .order('id')
           .range(from, from + PAGE - 1);
         check(error, 'listMoviesNeedingDetails');
-        ids.push(...(data ?? []).map((row) => row.id));
-        if (!data || data.length < PAGE) return ids;
+        for (const row of data ?? []) ids.add(row.id);
+        if (!data || data.length < PAGE) return [...ids];
       }
     },
 
     async updateMovieDetails(id, update) {
       const { error } = await db.from('movies').update(update).eq('id', id);
       check(error, `updateMovieDetails(${id})`);
+    },
+
+    async countMovieProviders(staleBefore) {
+      const [all, stale] = await Promise.all([
+        db.from('movie_providers').select('*', { count: 'exact', head: true }),
+        db.from('movie_providers').select('*', { count: 'exact', head: true }).lt('last_seen_at', staleBefore),
+      ]);
+      check(all.error, 'countMovieProviders');
+      check(stale.error, 'countMovieProviders(stale)');
+      return { total: all.count ?? 0, stale: stale.count ?? 0 };
     },
 
     async deleteStaleMovieProviders(before) {
