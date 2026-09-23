@@ -2,15 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { CATALOG_QUERY_KEY } from '@/components/catalog/MovieGrid';
-
-function savedQuery(): string {
-  try {
-    return sessionStorage.getItem(CATALOG_QUERY_KEY) ?? '';
-  } catch {
-    return '';
-  }
-}
+import { filmOpenedFromCatalog, savedQuery } from '@/components/catalog/catalogSession';
 
 export function BackLink() {
   const router = useRouter();
@@ -18,6 +10,12 @@ export function BackLink() {
     <Link
       href="/"
       onClick={(e) => {
+        // Veio de um card do catálogo nesta aba: volta pelo histórico (mantém filtros, blocos e rolagem).
+        if (filmOpenedFromCatalog(window.location.pathname)) {
+          e.preventDefault();
+          router.back();
+          return;
+        }
         const query = savedQuery();
         if (query) {
           e.preventDefault();
