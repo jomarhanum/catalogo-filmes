@@ -15,15 +15,30 @@
 -- was already only evaluated for the final page of rows thanks to the
 -- Limit/top-N sort, in every plan variant tested).
 --
--- Fix: switch the function to LANGUAGE PLPGSQL. PL/pgSQL (via SPI) uses the
--- standard "custom plan for the first 5 executions, generic only if cheaper"
--- planning heuristic (plan_cache_mode = auto). Because the custom plan's
--- estimated cost here (~1900) is orders of magnitude below the generic plan's
--- estimated cost (~436000), Postgres keeps re-planning with the real argument
--- values on every call, which restores the Hash Semi Join / top-N heapsort
--- plan and its ~15-50ms runtime on this dataset. Verified with mixed
--- parameter combinations (default / p_providers / p_sort='nota') repeated
--- well past the 5-execution threshold in the same session -- all stayed fast.
+-- Fix: switch the function to LANGUAGE PLPGSQL *and* pin
+-- `set plan_cache_mode = force_custom_plan` (function-scoped GUC, PG12+, no
+-- extra cost since the function already carries a SET clause for
+-- search_path). PL/pgSQL (via SPI) can form a plan specialized to the actual
+-- argument values -- unlike LANGUAGE SQL, which always plans generically. By
+-- default that ability is gated by the "custom plan for the first 5
+-- executions per backend, generic only if not much more expensive"
+-- heuristic (plan_cache_mode = auto), which re-checks
+-- `generic_cost < avg_custom_cost` on every call after the fifth. That
+-- heuristic alone would NOT be a reliable guarantee here: PostgREST/Supavisor
+-- backends are long-lived and serve every parameter shape over their
+-- lifetime, so avg_custom_cost drifts across calls, and the generic plan's
+-- estimated cost comes from the same broken `p_x is null or ...` selectivity
+-- described above. As the catalog grows and statistics shift, the heuristic
+-- could silently flip back to the multi-second Nested Loop plan (-> 500s at
+-- the 3s statement_timeout), and no test against the small seed dataset would
+-- catch that regression. `force_custom_plan` removes the dependency on that
+-- heuristic entirely: every single call is planned fresh against its actual
+-- argument values, unconditionally, which is what restores the Hash Semi
+-- Join / top-N heapsort plan and its ~15-50ms runtime on this dataset.
+-- Verified with mixed parameter combinations (default / p_providers /
+-- p_sort='nota') repeated well past the old 5-execution threshold in the same
+-- session -- all stayed fast, as expected now that the behavior no longer
+-- depends on a cost comparison.
 --
 -- Kept the CTE staging (filtered -> page -> providers-for-page) recommended
 -- for this shape: it makes explicit that per-row provider aggregation only
@@ -60,6 +75,7 @@ language plpgsql
 stable
 security invoker
 set search_path = public
+set plan_cache_mode = force_custom_plan
 as $$
 begin
   return query
