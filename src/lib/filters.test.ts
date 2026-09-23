@@ -10,6 +10,12 @@ import {
 } from './filters';
 
 describe('parseFilters', () => {
+  it('ignora ids fora do intervalo de integer do Postgres', () => {
+    const f = parseFilters({ streaming: '8,3000000000', genero: '3000000000' });
+    expect(f.providers).toEqual([8]);
+    expect(f.genres).toEqual([]);
+  });
+
   it('sem parâmetros retorna o padrão', () => {
     expect(parseFilters({})).toEqual(DEFAULT_FILTERS);
   });

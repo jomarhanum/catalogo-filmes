@@ -43,7 +43,7 @@ export const DEFAULT_FILTERS: CatalogFilters = {
 
 export type RawSearchParams = Record<string, string | string[] | undefined>;
 
-const idSchema = z.coerce.number().int().positive();
+const idSchema = z.coerce.number().int().positive().max(2_147_483_647);
 const yearSchema = z.coerce.number().int().min(1870).max(2100);
 const ratingSchema = z.coerce.number().min(0).max(10);
 const runtimeSchema = z.coerce.number().int().min(1).max(600);
