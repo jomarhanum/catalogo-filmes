@@ -110,6 +110,13 @@ export type Database = {
             foreignKeyName: "movie_providers_provider_id_fkey"
             columns: ["provider_id"]
             isOneToOne: false
+            referencedRelation: "available_providers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movie_providers_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
             referencedRelation: "providers"
             referencedColumns: ["id"]
           },
@@ -189,10 +196,54 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      available_providers: {
+        Row: {
+          display_priority: number | null
+          id: number | null
+          logo_path: string | null
+          name: string | null
+        }
+        Insert: {
+          display_priority?: number | null
+          id?: number | null
+          logo_path?: string | null
+          name?: string | null
+        }
+        Update: {
+          display_priority?: number | null
+          id?: number | null
+          logo_path?: string | null
+          name?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
-      [_ in never]: never
+      search_movies: {
+        Args: {
+          p_access?: Database["public"]["Enums"]["access_type"][]
+          p_genres?: number[]
+          p_language?: string
+          p_limit?: number
+          p_max_runtime?: number
+          p_min_rating?: number
+          p_offset?: number
+          p_providers?: number[]
+          p_sort?: string
+          p_year_max?: number
+          p_year_min?: number
+        }
+        Returns: {
+          id: number
+          poster_path: string
+          providers: Json
+          release_date: string
+          runtime: number
+          title: string
+          total_count: number
+          vote_average: number
+        }[]
+      }
     }
     Enums: {
       access_type: "flatrate" | "rent" | "buy"
