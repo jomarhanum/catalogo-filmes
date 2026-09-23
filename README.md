@@ -1,36 +1,81 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Catálogo de filmes nos streamings do Brasil
 
-## Getting Started
+Site que mostra quais filmes estão disponíveis agora nos streamings do Brasil (assinatura, aluguel ou
+compra), com filtros por streaming, tipo de acesso, gênero, ano, nota, duração e idioma, e uma página
+por filme com onde assistir e o trailer. Os dados vêm do TMDB e são atualizados uma vez por dia.
 
-First, run the development server:
+## Stack
+
+- [Next.js](https://nextjs.org/) 16 (App Router) + React 19 + Tailwind CSS 4
+- [Supabase](https://supabase.com/) (Postgres) para o catálogo
+- API do [TMDB](https://www.themoviedb.org/) (disponibilidade via JustWatch)
+- Vitest (unidade e integração) e Playwright (ponta a ponta)
+- GitHub Actions (CI e sincronização diária) e Vercel (hospedagem)
+
+## Arquitetura
+
+1. **Sincronização** (`sync/`): um script Node que roda uma vez por dia no GitHub Actions, varre o
+   TMDB por streaming e tipo de acesso e grava filmes, gêneros e ligações filme–streaming no Supabase.
+   Ligações que não aparecem mais são removidas no fim (com uma trava contra remoções em massa).
+2. **Banco** (`supabase/`): Postgres com leitura pública via RLS e a função `search_movies`, que
+   aplica filtros, ordenação e paginação num único RPC.
+3. **Site** (`src/`): Next.js lê o Supabase com a chave pública; os filtros ficam na URL, então
+   qualquer busca pode ser compartilhada.
+
+## Rodando localmente
+
+Pré-requisitos: Node 24 e Docker Desktop (para o Supabase local).
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npx supabase start          # sobe o Postgres local com as migrações e a seed
+npm run env:local           # gera o .env.local com as chaves do Supabase local
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Acrescente ao `.env.local` o seu token de leitura da API do TMDB (v4):
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+TMDB_API_TOKEN=seu-token
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Depois:
 
-## Learn More
+```bash
+npm run dev                 # http://localhost:3000
+```
 
-To learn more about Next.js, take a look at the following resources:
+A seed já traz alguns filmes. Para trazer o catálogo real do TMDB:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm run sync
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Testes
 
-## Deploy on Vercel
+```bash
+npm run test:unit           # unidade (sem banco)
+npm run test:int            # integração (precisa do Supabase local)
+npm run test:e2e            # Playwright: faz o build e sobe o site na porta 3100
+npm run typecheck
+npm run lint
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Deploy
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. **Supabase**: crie o projeto, vincule com `npx supabase link --project-ref <ref>` e aplique as
+   migrações com `npx supabase db push`.
+2. **GitHub**: em *Settings → Secrets and variables → Actions*, cadastre `SUPABASE_URL`,
+   `SUPABASE_SERVICE_ROLE_KEY` e `TMDB_API_TOKEN`. O workflow *Sincronizar catálogo* roda todo dia às
+   03:00 (Brasília) e também pode ser disparado à mão.
+3. **Vercel**: importe o repositório e defina `NEXT_PUBLIC_SUPABASE_URL` e
+   `NEXT_PUBLIC_SUPABASE_ANON_KEY`. A versão do Node vem do campo `engines` do `package.json`.
+
+> O GitHub desativa workflows agendados depois de 60 dias sem atividade no repositório. Se a
+> sincronização parar, reative o workflow na aba *Actions* (ou faça qualquer commit).
+
+## Créditos
+
+Dados de filmes fornecidos pelo [TMDB](https://www.themoviedb.org/). This product uses the TMDB API
+but is not endorsed or certified by TMDB.
+
+Dados de disponibilidade nos streamings fornecidos pelo [JustWatch](https://www.justwatch.com/br).
