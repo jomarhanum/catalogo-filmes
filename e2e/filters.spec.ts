@@ -70,3 +70,17 @@ test('gaveta: ano inválido mostra erro e não aplica', async ({ page }) => {
   await expect(drawer).toBeVisible();
   await expect(page).toHaveURL('/');
 });
+
+test('gaveta: valores da URL fora da lista aparecem nos selects', async ({ page }) => {
+  await page.goto('/?nota=7.5');
+  await page.getByRole('button', { name: 'Mais filtros (1)' }).click();
+  const drawer = page.getByRole('dialog', { name: 'Mais filtros' });
+  await expect(drawer.getByLabel('Nota mínima')).toHaveValue('7.5');
+  await expect(drawer.getByLabel('Nota mínima').locator('option:checked')).toHaveText('★ 7,5+');
+
+  await page.goto('/?duracao_max=100&idioma=sv');
+  await page.getByRole('button', { name: 'Mais filtros (2)' }).click();
+  await expect(drawer.getByLabel('Duração máxima')).toHaveValue('100');
+  await expect(drawer.getByLabel('Duração máxima').locator('option:checked')).toHaveText('Até 1h40');
+  await expect(drawer.getByLabel('Idioma')).toHaveValue('sv');
+});

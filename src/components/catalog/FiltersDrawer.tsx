@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { toggle, type CatalogFilters } from '@/lib/filters';
+import { formatRating, formatRuntime } from '@/lib/format';
 import type { GenreRef } from '@/lib/queries/types';
 
 const YEAR_ERROR = 'Informe um ano entre 1870 e 2100';
@@ -16,6 +17,18 @@ const LANGUAGES: [string, string][] = [
   ['ja', 'Japonês'],
   ['ko', 'Coreano'],
 ];
+
+const RATING_OPTIONS = [6, 7, 8];
+const RUNTIME_OPTIONS = [90, 120, 150];
+
+const ratingLabel = (value: number) => `★ ${formatRating(value).replace(/,0$/, '')}+`;
+const runtimeLabel = (minutes: number) => `Até ${formatRuntime(minutes)}`;
+
+// Um valor válido vindo da URL que não está entre as opções fixas vira uma opção extra,
+// para o select mostrar o filtro que está ativo.
+function withCurrent(options: number[], current: number | null): number[] {
+  return current === null || options.includes(current) ? options : [...options, current].sort((a, b) => a - b);
+}
 
 type Extra = Pick<CatalogFilters, 'genres' | 'yearMin' | 'yearMax' | 'minRating' | 'maxRuntime' | 'language'>;
 
@@ -170,9 +183,11 @@ function DrawerBody({ filters, genres, onClose, onApply }: Omit<Props, 'open'>) 
             className={field}
           >
             <option value="">Qualquer</option>
-            <option value="6">★ 6+</option>
-            <option value="7">★ 7+</option>
-            <option value="8">★ 8+</option>
+            {withCurrent(RATING_OPTIONS, filters.minRating).map((value) => (
+              <option key={value} value={value}>
+                {ratingLabel(value)}
+              </option>
+            ))}
           </select>
         </label>
 
@@ -184,9 +199,11 @@ function DrawerBody({ filters, genres, onClose, onApply }: Omit<Props, 'open'>) 
             className={field}
           >
             <option value="">Qualquer</option>
-            <option value="90">Até 1h30</option>
-            <option value="120">Até 2h</option>
-            <option value="150">Até 2h30</option>
+            {withCurrent(RUNTIME_OPTIONS, filters.maxRuntime).map((value) => (
+              <option key={value} value={value}>
+                {runtimeLabel(value)}
+              </option>
+            ))}
           </select>
         </label>
 
@@ -198,6 +215,9 @@ function DrawerBody({ filters, genres, onClose, onApply }: Omit<Props, 'open'>) 
             className={field}
           >
             <option value="">Qualquer</option>
+            {filters.language !== null && !LANGUAGES.some(([code]) => code === filters.language) && (
+              <option value={filters.language}>{filters.language}</option>
+            )}
             {LANGUAGES.map(([code, name]) => (
               <option key={code} value={code}>
                 {name}
