@@ -1,0 +1,63 @@
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
+
+export function TrailerModal({ trailerKey, title }: { trailerKey: string; title: string }) {
+  const [open, setOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  // Ao abrir, o foco vai para o diálogo; Esc fecha e o foco volta para o botão que abriu.
+  useEffect(() => {
+    if (!open) return;
+    dialogRef.current?.focus();
+    const trigger = triggerRef.current;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      trigger?.focus();
+    };
+  }, [open]);
+
+  return (
+    <>
+      <button
+        ref={triggerRef}
+        type="button"
+        onClick={() => setOpen(true)}
+        className="mt-4 rounded-md bg-accent px-4 py-2 font-bold text-black"
+      >
+        ▶ Ver trailer
+      </button>
+      {open && (
+        <div
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Trailer de ${title}`}
+          tabIndex={-1}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 outline-none"
+          onClick={() => setOpen(false)}
+        >
+          <div className="w-full max-w-4xl" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-2 text-right">
+              <button type="button" onClick={() => setOpen(false)} className="text-sm underline">
+                Fechar ✕
+              </button>
+            </div>
+            <div className="aspect-video">
+              <iframe
+                className="h-full w-full rounded-lg"
+                src={`https://www.youtube-nocookie.com/embed/${encodeURIComponent(trailerKey)}?autoplay=1`}
+                title={`Trailer de ${title}`}
+                allow="autoplay; encrypted-media; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
