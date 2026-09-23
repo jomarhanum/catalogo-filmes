@@ -52,9 +52,9 @@ Um site que mostra quais filmes estão disponíveis agora nos streamings do Bras
 
 Três partes, cada uma com uma função só:
 
-1. **Sincronizador (`sync/`):** lê o TMDB e grava no Supabase. É a única parte que escreve no banco. Usa `TMDB_API_KEY` (ou token de leitura) e `SUPABASE_SERVICE_ROLE_KEY`, guardados nos segredos do GitHub.
+1. **Sincronizador (`sync/`):** lê o TMDB e grava no Supabase. É a única parte que escreve no banco. Usa `TMDB_API_TOKEN` (o "API Read Access Token" do TMDB) e `SUPABASE_SERVICE_ROLE_KEY`, guardados nos segredos do GitHub.
 2. **Banco (Supabase Postgres):** guarda filmes, gêneros, streamings e as ligações. O RLS (as regras de acesso do Supabase) fica ativo em todas as tabelas, com permissão só de leitura para a chave pública (`anon`).
-3. **Site (Next.js):** só lê o banco. **Não chama o TMDB**, porque tudo o que precisa está no banco, inclusive a chave do trailer. As imagens vêm do CDN de imagens do TMDB (`image.tmdb.org`), configurado em `next.config` como domínio permitido.
+3. **Site (Next.js):** só lê o banco. **Não chama o TMDB**, porque tudo o que precisa está no banco, inclusive a chave do trailer. As imagens vêm direto do CDN do TMDB (`image.tmdb.org`), já nos tamanhos certos, com `images.unoptimized: true`. Assim não gastamos a cota de otimização de imagens do plano gratuito da Vercel, que acabaria com dezenas de milhares de pôsteres.
 
 **Repositório único:** o site fica na raiz, o sincronizador em `sync/` e as migrações em `supabase/migrations/`. Os tipos TypeScript das tabelas são gerados pela Supabase CLI (`supabase gen types`) e compartilhados entre o site e o sincronizador.
 
@@ -114,7 +114,7 @@ Passos, com `run_started_at = now()`:
 1. **Referências:** atualiza `providers` (`/watch/providers/movie?watch_region=BR`) e `genres` (`/genre/movie/list?language=pt-BR`).
 2. **Varredura:** para cada streaming e cada tipo de acesso, percorre `/discover/movie` com `watch_region=BR`, `with_watch_providers={id}`, `with_watch_monetization_types={tipo}` e `language=pt-BR`. Para cada filme, grava ou atualiza `movies` e `movie_genres`, e grava ou atualiza `movie_providers` com `last_seen_at = run_started_at`.
    - Se uma consulta tiver mais de 500 páginas (limite do TMDB), divide por faixas de `primary_release_date` até cada faixa caber no limite.
-3. **Detalhes:** para filmes com `details_synced_at` vazio ou com mais de 30 dias, chama `/movie/{id}?language=pt-BR&append_to_response=videos` e grava `runtime`, `backdrop_path` e `trailer_key`. Para o trailer, prefere um vídeo do YouTube do tipo `Trailer` em pt-BR; se não houver, usa um em inglês (segunda chamada `videos` com `language=en-US`, só quando não houver em pt-BR).
+3. **Detalhes:** para filmes com `details_synced_at` vazio ou com mais de 30 dias, chama `/movie/{id}?language=pt-BR&append_to_response=videos&include_video_language=pt,en,null` e grava `runtime`, `backdrop_path` e `trailer_key`. Para o trailer, prefere um vídeo do YouTube do tipo `Trailer` em português, depois em inglês, depois qualquer outro, sempre com a mesma chamada. Se o TMDB responder 404 (filme removido de lá), o filme é pulado, sem derrubar a execução.
 4. **Limpeza:** **só se os passos 1–3 terminaram sem erro**, apaga as linhas de `movie_providers` com `last_seen_at < run_started_at`.
 5. **Resumo:** mostra no log quantos filmes foram adicionados, atualizados e desvinculados.
 
@@ -149,7 +149,7 @@ Os parâmetros são validados com Zod. Valores inválidos são ignorados, como s
 
 ### Tela do catálogo (layout escolhido: "logos em destaque")
 - Topo: nome do app.
-- `ProviderPicker`: linha de logos grandes dos streamings, com seleção múltipla. Os streamings seguem `display_priority`; os menos relevantes ficam atrás de um "ver todos".
+- `ProviderPicker`: linha de logos grandes dos streamings, com seleção múltipla. Só aparecem streamings com pelo menos um filme (view `available_providers`), na ordem de `display_priority`; depois dos 8 primeiros, os demais ficam atrás de um "ver todos".
 - `AccessTypeChips`: Assinatura / Aluguel / Compra.
 - Botão "Mais filtros (n)" que abre o `FiltersDrawer`, com gênero, ano, nota, duração e idioma.
 - Barra de resultados: total de filmes e o `SortSelect`.
@@ -191,7 +191,7 @@ Tema escuro com amarelo como cor de destaque, layout responsivo pensado primeiro
    - Marcar um streaming → a grade e a URL mudam.
    - "Carregar mais" adiciona filmes.
    - Abrir um filme → "onde assistir" aparece → o trailer abre.
-4. **CI (GitHub Actions, a cada push):** checagem de tipos, lint, testes unitários e de integração. O Playwright roda contra o preview da Vercel.
+4. **CI (GitHub Actions, a cada push):** checagem de tipos, lint, testes unitários, de integração e o Playwright, todos contra um Supabase local com os dados de exemplo. Isso é mais estável do que testar contra o preview da Vercel, que usa dados reais que mudam todo dia.
 
 ## 9. Configuração e segredos
 
