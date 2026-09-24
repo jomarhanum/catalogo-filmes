@@ -2,29 +2,27 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { filmOpenedFromCatalog, savedQuery } from '@/components/catalog/catalogSession';
+import { filmOpenedFromCatalog } from '@/components/catalog/catalogSession';
+import { clearFilmOpenedFromSite, filmOpenedFromSite } from '@/lib/navigation-origin';
 
 export function BackLink() {
   const router = useRouter();
   return (
     <Link
-      href="/catalogo"
+      href="/"
       onClick={(e) => {
-        // Veio de um card do catálogo nesta aba: volta pelo histórico (mantém filtros, blocos e rolagem).
-        if (filmOpenedFromCatalog(window.location.pathname)) {
+        // Aberto por um link de dentro do site nesta aba: volta pelo histórico (vitrine, catálogo
+        // com filtros e rolagem, ou busca). Aberto de fora: vai para a vitrine.
+        const path = window.location.pathname;
+        if (filmOpenedFromSite(path) || filmOpenedFromCatalog(path)) {
           e.preventDefault();
+          clearFilmOpenedFromSite();
           router.back();
-          return;
-        }
-        const query = savedQuery();
-        if (query) {
-          e.preventDefault();
-          router.push(`/catalogo?${query}`);
         }
       }}
-      className="text-sm text-muted hover:text-fg"
+      className="inline-flex items-center gap-1 text-sm text-muted hover:text-fg"
     >
-      ← Voltar ao catálogo
+      <span aria-hidden="true">‹</span> Voltar
     </Link>
   );
 }

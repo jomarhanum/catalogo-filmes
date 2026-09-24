@@ -34,8 +34,8 @@ test('abrir um filme pela busca depois de já ter vindo do catálogo não seques
   await page.getByTestId('movie-card').filter({ hasText: 'Corra!' }).click();
   await expect(page).toHaveURL('/filme/1');
 
-  await page.getByRole('link', { name: '← Voltar ao catálogo' }).click();
-  await expect(page).toHaveURL('/catalogo');
+  await page.getByRole('link', { name: 'Voltar', exact: true }).click();
+  await expect(page).toHaveURL('/busca?q=corra');
 });
 
 test('nenhum resultado e termo curto mostram mensagens', async ({ page }) => {
