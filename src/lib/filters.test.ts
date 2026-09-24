@@ -165,4 +165,14 @@ describe('parseSearchQuery', () => {
   it('corta em 100 caracteres', () => {
     expect(parseSearchQuery('x'.repeat(500))).toHaveLength(100);
   });
+  it('corta por pontos de código sem partir um emoji ao meio', () => {
+    const term = parseSearchQuery('a'.repeat(99) + '😀');
+    expect(term).toBe('a'.repeat(99) + '😀');
+    expect(Array.from(term ?? '')).toHaveLength(100);
+    expect(term?.isWellFormed()).toBe(true);
+    expect(parseSearchQuery('a'.repeat(100) + '😀')).toBe('a'.repeat(100));
+  });
+  it('um emoji sozinho (1 ponto de código) é sem busca', () => {
+    expect(parseSearchQuery('😀')).toBeNull();
+  });
 });

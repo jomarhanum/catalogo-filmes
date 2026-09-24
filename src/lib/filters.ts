@@ -155,6 +155,7 @@ export function catalogRedirectTarget(raw: RawSearchParams): string | null {
 export function parseSearchQuery(value: string | string[] | undefined): string | null {
   const first = Array.isArray(value) ? value[0] : value;
   if (typeof first !== 'string') return null;
-  const term = first.trim().slice(0, 100).trim();
-  return term.length >= 2 ? term : null;
+  // Conta pontos de código (não unidades UTF-16) para não partir um emoji ao meio.
+  const term = Array.from(first.trim()).slice(0, 100).join('').trim();
+  return Array.from(term).length >= 2 ? term : null;
 }
