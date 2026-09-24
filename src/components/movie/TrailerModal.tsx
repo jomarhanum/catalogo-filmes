@@ -2,7 +2,19 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-export function TrailerModal({ trailerKey, title }: { trailerKey: string; title: string }) {
+interface Props {
+  trailerKey: string;
+  title: string;
+  triggerLabel?: string;
+  triggerClassName?: string;
+}
+
+export function TrailerModal({
+  trailerKey,
+  title,
+  triggerLabel = 'Ver trailer',
+  triggerClassName = 'mt-4 rounded-md bg-accent px-4 py-2 font-bold text-white',
+}: Props) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -26,9 +38,9 @@ export function TrailerModal({ trailerKey, title }: { trailerKey: string; title:
         ref={triggerRef}
         type="button"
         onClick={() => setOpen(true)}
-        className="mt-4 rounded-md bg-accent px-4 py-2 font-bold text-black"
+        className={triggerClassName}
       >
-        ▶ Ver trailer
+        <span aria-hidden="true">▶</span> {triggerLabel}
       </button>
       {open && (
         <div

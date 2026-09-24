@@ -1,25 +1,30 @@
 import { expect, test, type Page } from '@playwright/test';
 
-test('mostra detalhes, onde assistir e trailer', async ({ page }) => {
+test('mostra detalhes, onde assistir e trailer embutido', async ({ page }) => {
   await page.goto('/filme/1');
   await expect(page.getByRole('heading', { level: 1, name: 'Corra!' })).toBeVisible();
-  await expect(page.getByText('2017 · 1h44 · Terror, Thriller')).toBeVisible();
-  await expect(page.getByTestId('watch-flatrate').getByTitle('Netflix')).toBeVisible();
-  await expect(page.getByTestId('watch-rent').getByTitle('Amazon Prime Video')).toBeVisible();
-  await expect(page.getByTestId('watch-buy').getByTitle('Amazon Prime Video')).toBeVisible();
+  const info = page.getByRole('list', { name: 'Informações' });
+  await expect(info.getByRole('listitem')).toHaveText(['★ 7,6', '2017', '1h44']);
+  await expect(page.getByRole('list', { name: 'Gêneros' }).getByRole('listitem')).toHaveText(['Terror', 'Thriller']);
+  await expect(page.getByRole('heading', { level: 2, name: 'Onde assistir' })).toBeVisible();
+  await expect(page.getByTestId('watch-flatrate')).toContainText('Netflix');
+  await expect(page.getByTestId('watch-rent')).toContainText('Amazon Prime Video');
+  await expect(page.getByTestId('watch-buy')).toContainText('Amazon Prime Video');
   await expect(page.getByText('Dados de disponibilidade:')).toBeVisible();
   await expect(page).toHaveTitle(/Corra! \(2017\)/);
 
-  await page.getByRole('button', { name: 'Ver trailer' }).click();
-  await expect(page.locator('iframe[src*="youtube-nocookie.com/embed/sRfnevzM9kQ"]')).toBeAttached();
-  await page.keyboard.press('Escape');
   await expect(page.locator('iframe')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Reproduzir trailer de Corra!' }).click();
+  const player = page.locator('iframe[src*="youtube-nocookie.com/embed/sRfnevzM9kQ"]');
+  await expect(player).toBeAttached();
+  // O botão focado some; o foco vai para o player em vez de cair no <body>.
+  await expect(player).toBeFocused();
 });
 
-test('filme sem trailer não mostra o botão', async ({ page }) => {
+test('filme sem trailer não mostra a seção de trailer', async ({ page }) => {
   await page.goto('/filme/2');
   await expect(page.getByRole('heading', { level: 1, name: 'Hereditário' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Ver trailer' })).toHaveCount(0);
+  await expect(page.getByRole('heading', { level: 2, name: 'Trailer' })).toHaveCount(0);
 });
 
 test('filme fora de streaming e id inválido mostram não encontrado', async ({ page }) => {
@@ -30,15 +35,66 @@ test('filme fora de streaming e id inválido mostram não encontrado', async ({ 
 });
 
 test('voltar ao catálogo mantém os filtros', async ({ page }) => {
-  await page.goto('/?streaming=8');
+  await page.goto('/catalogo?streaming=8');
   await page.getByTestId('movie-card').filter({ hasText: 'Corra!' }).click();
   await expect(page).toHaveURL('/filme/1');
-  await page.getByRole('link', { name: '← Voltar ao catálogo' }).click();
-  await expect(page).toHaveURL('/?streaming=8');
+  await page.getByRole('link', { name: 'Voltar', exact: true }).click();
+  await expect(page).toHaveURL('/catalogo?streaming=8');
+});
+
+test('voltar leva de volta à vitrine quando o filme foi aberto por ela', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('region', { name: 'Terror' }).getByTestId('movie-card').filter({ hasText: 'Corra!' }).click();
+  await expect(page).toHaveURL('/filme/1');
+  await page.getByRole('link', { name: 'Voltar', exact: true }).click();
+  await expect(page).toHaveURL('/');
+});
+
+test('filme aberto por link de fora: voltar vai para a vitrine sem sair do site', async ({ page }) => {
+  await page.goto('/filme/1');
+  await page.getByRole('link', { name: 'Voltar', exact: true }).click();
+  await expect(page).toHaveURL('/');
+  await expect(page.getByRole('heading', { level: 2, name: 'Em alta agora' })).toBeVisible();
+});
+
+test('marca de "aberto pelo site" não fica presa após sair pelo botão nativo do navegador', async ({ page }) => {
+  await page.goto('/catalogo');
+  await page.getByTestId('movie-card').filter({ hasText: 'Corra!' }).click();
+  await expect(page).toHaveURL('/filme/1');
+  await page.goBack();
+  await expect(page).toHaveURL('/catalogo');
+
+  await page.goto('/filme/1');
+  await page.getByRole('link', { name: 'Voltar', exact: true }).click();
+  await expect(page).toHaveURL('/');
+});
+
+test('marca antiga do catálogo não faz o voltar sair do site', async ({ page }) => {
+  await page.goto('/catalogo');
+  await page.getByTestId('movie-card').filter({ hasText: 'Corra!' }).click();
+  await expect(page).toHaveURL('/filme/1');
+  await page.getByRole('banner').getByRole('link', { name: 'Início' }).click();
+  await expect(page).toHaveURL('/');
+  await expect(page.getByRole('heading', { level: 2, name: 'Em alta agora' })).toBeVisible();
+  // Outra origem no histórico da aba (a sessionStorage do site continua a mesma).
+  await page.goto('about:blank');
+
+  await page.goto('/filme/1');
+  await page.getByRole('link', { name: 'Voltar', exact: true }).click();
+  await expect(page).toHaveURL('/');
+});
+
+test('no celular o pôster fica acima das informações', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 800 });
+  await page.goto('/filme/1');
+  const poster = await page.getByTestId('movie-poster').boundingBox();
+  const title = await page.getByRole('heading', { level: 1 }).boundingBox();
+  expect(poster && title && poster.y + poster.height <= title.y).toBe(true);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
 });
 
 async function openFilmFromSecondBlock(page: Page) {
-  await page.goto('/');
+  await page.goto('/catalogo');
   const cards = page.getByTestId('movie-card');
   await expect(cards).toHaveCount(24);
   await page.getByRole('button', { name: 'Carregar mais' }).click();
@@ -53,7 +109,7 @@ async function openFilmFromSecondBlock(page: Page) {
 }
 
 async function expectCatalogRestored(page: Page, href: string) {
-  await expect(page).toHaveURL('/');
+  await expect(page).toHaveURL('/catalogo');
   const cards = page.getByTestId('movie-card');
   await expect(cards).toHaveCount(38);
   await expect(page.locator(`a[data-testid="movie-card"][href="${href}"]`)).toBeInViewport();
@@ -62,7 +118,7 @@ async function expectCatalogRestored(page: Page, href: string) {
 test('link voltar mantém os blocos carregados e a rolagem', async ({ page }) => {
   const { href } = await openFilmFromSecondBlock(page);
   const historyLength = await page.evaluate(() => history.length);
-  await page.getByRole('link', { name: '← Voltar ao catálogo' }).click();
+  await page.getByRole('link', { name: 'Voltar', exact: true }).click();
   await expectCatalogRestored(page, href);
   // Voltou pelo histórico em vez de empilhar uma nova entrada.
   expect(await page.evaluate(() => history.length)).toBe(historyLength);
@@ -73,4 +129,15 @@ test('botão voltar do navegador mantém os blocos carregados e a rolagem', asyn
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   await page.goBack();
   await expectCatalogRestored(page, href);
+});
+
+test('catálogo reaberto pelo topo depois da vitrine começa do zero', async ({ page }) => {
+  await openFilmFromSecondBlock(page);
+  await page.getByRole('banner').getByRole('link', { name: 'Início' }).click();
+  await expect(page).toHaveURL('/');
+  // A vitrine apaga a marca de "filme aberto pelo catálogo" ao montar.
+  await expect.poll(() => page.evaluate(() => sessionStorage.getItem('catalog-opened-film'))).toBeNull();
+  await page.getByRole('banner').getByRole('link', { name: 'Catálogo', exact: true }).click();
+  await expect(page).toHaveURL('/catalogo');
+  await expect(page.getByTestId('movie-card')).toHaveCount(24);
 });

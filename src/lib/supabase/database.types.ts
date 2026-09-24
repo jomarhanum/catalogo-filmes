@@ -219,6 +219,7 @@ export type Database = {
       }
     }
     Functions: {
+      f_unaccent: { Args: { "": string }; Returns: string }
       search_movies: {
         Args: {
           p_access?: Database["public"]["Enums"]["access_type"][]
@@ -233,6 +234,19 @@ export type Database = {
           p_year_max?: number
           p_year_min?: number
         }
+        Returns: {
+          id: number
+          poster_path: string
+          providers: Json
+          release_date: string
+          runtime: number
+          title: string
+          total_count: number
+          vote_average: number
+        }[]
+      }
+      search_titles: {
+        Args: { p_limit?: number; p_offset?: number; p_query: string }
         Returns: {
           id: number
           poster_path: string

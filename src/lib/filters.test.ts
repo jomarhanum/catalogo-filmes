@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_FILTERS,
+  catalogRedirectTarget,
   countExtraFilters,
   filtersToQuery,
   parseFilters,
   parseMovieId,
   parseOffset,
+  parseSearchQuery,
   toggle,
 } from './filters';
 
@@ -129,5 +131,48 @@ describe('parseMovieId', () => {
     expect(parseMovieId('5.5')).toBeNull();
     expect(parseMovieId('')).toBeNull();
     expect(parseMovieId('12345678901')).toBeNull();
+  });
+});
+
+describe('catalogRedirectTarget', () => {
+  it('sem parâmetros do catálogo não redireciona', () => {
+    expect(catalogRedirectTarget({})).toBeNull();
+    expect(catalogRedirectTarget({ q: 'corra', utm_source: 'x' })).toBeNull();
+  });
+
+  it('leva os filtros válidos para /catalogo', () => {
+    expect(catalogRedirectTarget({ streaming: '8' })).toBe('/catalogo?streaming=8');
+    expect(catalogRedirectTarget({ streaming: '8,abc', genero: '27', x: '1' })).toBe('/catalogo?streaming=8&genero=27');
+  });
+
+  it('parâmetro do catálogo só com valores inválidos vai para /catalogo limpo', () => {
+    expect(catalogRedirectTarget({ nota: 'abc' })).toBe('/catalogo');
+  });
+});
+
+describe('parseSearchQuery', () => {
+  it('remove espaços nas pontas', () => {
+    expect(parseSearchQuery('  corra  ')).toBe('corra');
+  });
+  it('menos de 2 caracteres, vazio ou ausente é sem busca', () => {
+    expect(parseSearchQuery('a')).toBeNull();
+    expect(parseSearchQuery('   ')).toBeNull();
+    expect(parseSearchQuery(undefined)).toBeNull();
+  });
+  it('usa só o primeiro valor quando repetido', () => {
+    expect(parseSearchQuery(['nós', 'x'])).toBe('nós');
+  });
+  it('corta em 100 caracteres', () => {
+    expect(parseSearchQuery('x'.repeat(500))).toHaveLength(100);
+  });
+  it('corta por pontos de código sem partir um emoji ao meio', () => {
+    const term = parseSearchQuery('a'.repeat(99) + '😀');
+    expect(term).toBe('a'.repeat(99) + '😀');
+    expect(Array.from(term ?? '')).toHaveLength(100);
+    expect(term?.isWellFormed()).toBe(true);
+    expect(parseSearchQuery('a'.repeat(100) + '😀')).toBe('a'.repeat(100));
+  });
+  it('um emoji sozinho (1 ponto de código) é sem busca', () => {
+    expect(parseSearchQuery('😀')).toBeNull();
   });
 });

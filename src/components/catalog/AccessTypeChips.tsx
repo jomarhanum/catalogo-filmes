@@ -19,7 +19,7 @@ export function AccessTypeChips({ selected, onChange }: Props) {
             aria-pressed={on}
             onClick={() => onChange(toggle(selected, type))}
             className={`rounded-full border px-3 py-1 text-sm ${
-              on ? 'border-accent bg-accent font-semibold text-black' : 'border-border bg-surface'
+              on ? 'border-accent bg-accent font-semibold text-white' : 'border-border bg-surface'
             }`}
           >
             {ACCESS_LABELS[type]}

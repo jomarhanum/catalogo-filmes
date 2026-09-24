@@ -9,7 +9,7 @@ export function useFilterNavigation(filters: CatalogFilters) {
   return useCallback(
     (patch: Partial<CatalogFilters>) => {
       const query = filtersToQuery({ ...filters, ...patch });
-      router.push(query ? `/?${query}` : '/', { scroll: false });
+      router.push(query ? `/catalogo?${query}` : '/catalogo', { scroll: false });
     },
     [filters, router],
   );

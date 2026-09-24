@@ -74,11 +74,6 @@ export function markFilmOpenedFromCatalog(path: string): void {
   write(FROM_CATALOG_KEY, path);
 }
 
-/** Verdadeiro se o filme em `path` foi aberto a partir do catálogo (o catálogo está logo atrás no histórico). */
-export function filmOpenedFromCatalog(path: string): boolean {
-  return read(FROM_CATALOG_KEY) === path;
-}
-
 /** Usado pelo catálogo ao montar: diz se está voltando de um filme aberto por ele e apaga a marca. */
 export function takeReturnFromFilm(): boolean {
   const marked = read(FROM_CATALOG_KEY) !== null;

@@ -64,4 +64,10 @@ describe('searchMovies', () => {
   it('sem resultados', async () => {
     expect(await searchMovies(db, { ...DEFAULT_FILTERS, language: 'zz' }, 0)).toEqual({ movies: [], total: 0 });
   });
+
+  it('aceita um limite por chamada', async () => {
+    const result = await searchMovies(db, DEFAULT_FILTERS, 0, 20);
+    expect(result.movies).toHaveLength(20);
+    expect(result.total).toBe(38);
+  });
 });

@@ -1,8 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { cache } from 'react';
-import { MovieHero } from '@/components/movie/MovieHero';
-import { WhereToWatch } from '@/components/movie/WhereToWatch';
+import { MovieDetailsView } from '@/components/movie/MovieDetailsView';
 import { parseMovieId } from '@/lib/filters';
 import { formatYear } from '@/lib/format';
 import { getMovie } from '@/lib/queries/getMovie';
@@ -34,8 +33,7 @@ export default async function MoviePage({ params }: Props) {
   if (!movie) notFound();
   return (
     <main>
-      <MovieHero movie={movie} />
-      <WhereToWatch watch={movie.watch} />
+      <MovieDetailsView movie={movie} />
     </main>
   );
 }

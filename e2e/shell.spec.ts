@@ -11,11 +11,23 @@ test('página sobre mostra os créditos obrigatórios', async ({ page }) => {
 test('rota inexistente mostra a página de não encontrado', async ({ page }) => {
   await page.goto('/nao-existe');
   await expect(page.getByText('Não encontramos essa página')).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Voltar ao catálogo' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Voltar ao início' })).toHaveAttribute('href', '/');
 });
 
-test('cabeçalho leva ao catálogo', async ({ page }) => {
+test('topo tem logo, links e busca', async ({ page }) => {
   await page.goto('/sobre');
-  await page.getByRole('link', { name: '🎬 Catálogo' }).click();
-  await expect(page).toHaveURL('/');
+  const header = page.getByRole('banner');
+  await expect(header.getByRole('link', { name: 'Início' })).toHaveAttribute('href', '/');
+  await expect(header.getByRole('link', { name: 'Catálogo', exact: true })).toHaveAttribute('href', '/catalogo');
+  await expect(header.getByRole('searchbox', { name: 'Buscar filme' })).toBeVisible();
+  await expect(header.getByRole('link', { name: 'CineCatálogo' })).toHaveAttribute('href', '/');
+});
+
+test('no celular a busca abre por um botão de lupa', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 800 });
+  await page.goto('/sobre');
+  const header = page.getByRole('banner');
+  await expect(header.getByRole('searchbox', { name: 'Buscar filme' })).toBeHidden();
+  await header.getByRole('button', { name: 'Abrir busca' }).click();
+  await expect(header.getByRole('searchbox', { name: 'Buscar filme' })).toBeFocused();
 });
