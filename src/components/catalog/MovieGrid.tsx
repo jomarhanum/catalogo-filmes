@@ -36,7 +36,11 @@ export function MovieGrid({ initialMovies, total, query, kind = 'catalog' }: Pro
   // Voltando de um filme aberto por aqui: recupera os blocos já carregados e a rolagem.
   // Roda depois da hidratação para o primeiro render bater com o HTML do servidor.
   useEffect(() => {
-    if (!isCatalog || !takeReturnFromFilm()) return;
+    if (!isCatalog) {
+      takeReturnFromFilm();
+      return;
+    }
+    if (!takeReturnFromFilm()) return;
     const stored = loadCatalogState();
     const restored = restorableMovies(stored, query, initialMovies);
     if (!stored || !restored) return;

@@ -25,6 +25,19 @@ test('resultados longos usam Carregar mais', async ({ page }) => {
   await expect(cards).toHaveCount(30);
 });
 
+test('abrir um filme pela busca depois de já ter vindo do catálogo não sequestra o "voltar"', async ({ page }) => {
+  await page.goto('/catalogo');
+  await page.getByTestId('movie-card').filter({ hasText: 'Corra!' }).click();
+  await expect(page).toHaveURL('/filme/1');
+
+  await page.goto('/busca?q=corra');
+  await page.getByTestId('movie-card').filter({ hasText: 'Corra!' }).click();
+  await expect(page).toHaveURL('/filme/1');
+
+  await page.getByRole('link', { name: '← Voltar ao catálogo' }).click();
+  await expect(page).toHaveURL('/catalogo');
+});
+
 test('nenhum resultado e termo curto mostram mensagens', async ({ page }) => {
   await page.goto('/busca?q=xyzxyz');
   await expect(page.getByText('Nenhum filme encontrado para “xyzxyz”.')).toBeVisible();
