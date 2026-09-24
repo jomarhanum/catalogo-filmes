@@ -26,7 +26,7 @@ export function TrailerModal({ trailerKey, title }: { trailerKey: string; title:
         ref={triggerRef}
         type="button"
         onClick={() => setOpen(true)}
-        className="mt-4 rounded-md bg-accent px-4 py-2 font-bold text-black"
+        className="mt-4 rounded-md bg-accent px-4 py-2 font-bold text-white"
       >
         ▶ Ver trailer
       </button>

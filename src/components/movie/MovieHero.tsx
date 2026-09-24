@@ -31,7 +31,7 @@ export function MovieHero({ movie }: { movie: MovieDetails }) {
             <p className="mt-1 text-sm text-muted">
               {meta && <span>{meta}</span>}
               {meta && ' · '}
-              <span className="font-bold text-accent">★ {formatRating(movie.voteAverage)}</span>
+              <span className="font-bold text-star">★ {formatRating(movie.voteAverage)}</span>
             </p>
             {movie.overview && <p className="mt-3 leading-relaxed text-fg/90">{movie.overview}</p>}
             {movie.trailerKey && <TrailerModal trailerKey={movie.trailerKey} title={movie.title} />}

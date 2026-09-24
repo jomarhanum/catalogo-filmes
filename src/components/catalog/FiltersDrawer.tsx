@@ -121,7 +121,7 @@ function DrawerBody({ filters, genres, onClose, onApply }: Omit<Props, 'open'>) 
                   aria-pressed={on}
                   onClick={() => set({ genres: toggle(draft.genres, g.id) })}
                   className={`rounded-full border px-3 py-1 text-sm ${
-                    on ? 'border-accent bg-accent font-semibold text-black' : 'border-border bg-surface'
+                    on ? 'border-accent bg-accent font-semibold text-white' : 'border-border bg-surface'
                   }`}
                 >
                   {g.name}
@@ -240,7 +240,7 @@ function DrawerBody({ filters, genres, onClose, onApply }: Omit<Props, 'open'>) 
           <button
             type="button"
             onClick={handleApply}
-            className="flex-1 rounded-md bg-accent px-4 py-2 text-sm font-semibold text-black"
+            className="flex-1 rounded-md bg-accent px-4 py-2 text-sm font-semibold text-white"
           >
             Aplicar
           </button>

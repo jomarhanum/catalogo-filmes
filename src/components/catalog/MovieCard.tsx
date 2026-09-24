@@ -21,7 +21,7 @@ export function MovieCard({ movie }: { movie: MovieCardData }) {
             className="object-cover transition group-hover:scale-105"
           />
         )}
-        <span className="absolute left-1.5 top-1.5 rounded bg-black/70 px-1.5 py-0.5 text-xs font-bold text-accent">
+        <span className="absolute left-1.5 top-1.5 rounded bg-black/70 px-1.5 py-0.5 text-xs font-bold text-star">
           ★ {formatRating(movie.voteAverage)}
         </span>
       </div>
