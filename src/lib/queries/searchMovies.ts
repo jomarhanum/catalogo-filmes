@@ -9,7 +9,41 @@ interface RawProvider {
   logo_path: string | null;
 }
 
-export async function searchMovies(db: Db, filters: CatalogFilters, offset: number): Promise<SearchResult> {
+/** Linha devolvida por search_movies e search_titles (mesmas colunas). */
+export interface SearchRow {
+  id: number;
+  title: string;
+  release_date: string | null;
+  runtime: number | null;
+  vote_average: number;
+  poster_path: string | null;
+  providers: unknown;
+  total_count: number;
+}
+
+export function toSearchResult(rows: SearchRow[]): SearchResult {
+  return {
+    total: rows[0]?.total_count ?? 0,
+    movies: rows.map((row) => ({
+      id: row.id,
+      title: row.title,
+      releaseDate: row.release_date,
+      runtime: row.runtime,
+      voteAverage: row.vote_average,
+      posterPath: row.poster_path,
+      providers: (row.providers as RawProvider[]).map(
+        (p): ProviderRef => ({ id: p.id, name: p.name, logoPath: p.logo_path }),
+      ),
+    })),
+  };
+}
+
+export async function searchMovies(
+  db: Db,
+  filters: CatalogFilters,
+  offset: number,
+  limit: number = PAGE_SIZE,
+): Promise<SearchResult> {
   const { data, error } = await db.rpc('search_movies', {
     p_providers: filters.providers.length ? filters.providers : undefined,
     p_access: filters.access.length ? filters.access : undefined,
@@ -20,24 +54,9 @@ export async function searchMovies(db: Db, filters: CatalogFilters, offset: numb
     p_max_runtime: filters.maxRuntime ?? undefined,
     p_language: filters.language ?? undefined,
     p_sort: filters.sort,
-    p_limit: PAGE_SIZE,
+    p_limit: limit,
     p_offset: offset,
   });
   if (error) throw new Error(`search_movies: ${error.message}`);
-
-  const rows = data ?? [];
-  return {
-    total: rows[0]?.total_count ?? 0,
-    movies: rows.map((row) => ({
-      id: row.id,
-      title: row.title,
-      releaseDate: row.release_date,
-      runtime: row.runtime,
-      voteAverage: row.vote_average,
-      posterPath: row.poster_path,
-      providers: (row.providers as unknown as RawProvider[]).map(
-        (p): ProviderRef => ({ id: p.id, name: p.name, logoPath: p.logo_path }),
-      ),
-    })),
-  };
+  return toSearchResult(data ?? []);
 }
