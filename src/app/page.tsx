@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { FeaturedHero } from '@/components/home/FeaturedHero';
+import { ForgetCatalogReturn } from '@/components/home/ForgetCatalogReturn';
 import { MovieRow } from '@/components/home/MovieRow';
 import { catalogRedirectTarget, type RawSearchParams } from '@/lib/filters';
 import { seeAllHref } from '@/lib/home-rows';
@@ -18,6 +19,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
   if (!featured && rows.length === 0) {
     return (
       <main className="px-4 py-24 text-center sm:px-8">
+        <ForgetCatalogReturn />
         <p className="text-lg">O catálogo ainda está sendo carregado. Volte em alguns minutos.</p>
         <Link href="/catalogo" className="mt-4 inline-block text-accent underline">
           Ver o catálogo
@@ -28,6 +30,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
 
   return (
     <main className="pb-12">
+      <ForgetCatalogReturn />
       {featured && <FeaturedHero movie={featured} />}
       <div className={featured ? 'relative z-10 -mt-24 space-y-8 sm:-mt-32' : 'space-y-8 pt-6'}>
         {rows.map(({ row, movies }) => (

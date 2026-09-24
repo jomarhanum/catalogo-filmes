@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
-import { filmOpenedFromCatalog } from '@/components/catalog/catalogSession';
 import { takeFilmOpenedFromSite } from '@/lib/navigation-origin';
 
 export function BackLink() {
@@ -17,7 +16,7 @@ export function BackLink() {
     const path = window.location.pathname;
     // `||` preserva `true` na segunda execução do efeito em modo StrictMode (dev): a marca já foi
     // consumida na primeira execução, então a segunda não pode rebaixar `cameFromSite` para `false`.
-    cameFromSite.current = cameFromSite.current || takeFilmOpenedFromSite(path) || filmOpenedFromCatalog(path);
+    cameFromSite.current = cameFromSite.current || takeFilmOpenedFromSite(path);
   }, []);
 
   return (

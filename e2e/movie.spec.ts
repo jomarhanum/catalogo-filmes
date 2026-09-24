@@ -66,6 +66,21 @@ test('marca de "aberto pelo site" não fica presa após sair pelo botão nativo 
   await expect(page).toHaveURL('/');
 });
 
+test('marca antiga do catálogo não faz o voltar sair do site', async ({ page }) => {
+  await page.goto('/catalogo');
+  await page.getByTestId('movie-card').filter({ hasText: 'Corra!' }).click();
+  await expect(page).toHaveURL('/filme/1');
+  await page.getByRole('banner').getByRole('link', { name: 'Início' }).click();
+  await expect(page).toHaveURL('/');
+  await expect(page.getByRole('heading', { level: 2, name: 'Em alta agora' })).toBeVisible();
+  // Outra origem no histórico da aba (a sessionStorage do site continua a mesma).
+  await page.goto('about:blank');
+
+  await page.goto('/filme/1');
+  await page.getByRole('link', { name: 'Voltar', exact: true }).click();
+  await expect(page).toHaveURL('/');
+});
+
 test('no celular o pôster fica acima das informações', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 800 });
   await page.goto('/filme/1');
@@ -111,4 +126,15 @@ test('botão voltar do navegador mantém os blocos carregados e a rolagem', asyn
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   await page.goBack();
   await expectCatalogRestored(page, href);
+});
+
+test('catálogo reaberto pelo topo depois da vitrine começa do zero', async ({ page }) => {
+  await openFilmFromSecondBlock(page);
+  await page.getByRole('banner').getByRole('link', { name: 'Início' }).click();
+  await expect(page).toHaveURL('/');
+  // A vitrine apaga a marca de "filme aberto pelo catálogo" ao montar.
+  await expect.poll(() => page.evaluate(() => sessionStorage.getItem('catalog-opened-film'))).toBeNull();
+  await page.getByRole('banner').getByRole('link', { name: 'Catálogo', exact: true }).click();
+  await expect(page).toHaveURL('/catalogo');
+  await expect(page.getByTestId('movie-card')).toHaveCount(24);
 });
