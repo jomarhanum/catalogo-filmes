@@ -32,7 +32,7 @@ export default async function SearchPage({ searchParams }: Props) {
       {result.total === 0 ? (
         <div className="py-10">
           <p className="text-lg">Nenhum filme encontrado para “{term}”.</p>
-          <Link href="/catalogo" className="mt-3 inline-block text-accent underline">
+          <Link href="/catalogo" className="mt-3 inline-block text-fg underline hover:text-accent">
             Ver o catálogo
           </Link>
         </div>

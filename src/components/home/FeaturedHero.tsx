@@ -15,7 +15,7 @@ export function FeaturedHero({ movie }: { movie: MovieDetails }) {
   return (
     <section aria-label="Filme em destaque" className="relative isolate -mt-16 flex min-h-[60vh] items-end sm:min-h-[80vh]">
       {backdrop && (
-        <Image src={backdrop} alt="" fill priority sizes="100vw" className="-z-10 object-cover object-top" />
+        <Image src={backdrop} alt="" fill preload sizes="100vw" className="-z-10 object-cover object-top" />
       )}
       <div aria-hidden="true" className="absolute inset-0 -z-10 bg-linear-to-r from-bg via-bg/60 to-transparent" />
       <div aria-hidden="true" className="absolute inset-0 -z-10 bg-linear-to-t from-bg via-bg/10 to-transparent" />

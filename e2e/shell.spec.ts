@@ -11,7 +11,7 @@ test('página sobre mostra os créditos obrigatórios', async ({ page }) => {
 test('rota inexistente mostra a página de não encontrado', async ({ page }) => {
   await page.goto('/nao-existe');
   await expect(page.getByText('Não encontramos essa página')).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Voltar ao catálogo' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Voltar ao início' })).toHaveAttribute('href', '/');
 });
 
 test('topo tem logo, links e busca', async ({ page }) => {

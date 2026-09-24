@@ -21,7 +21,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
       <main className="px-4 py-24 text-center sm:px-8">
         <ForgetCatalogReturn />
         <p className="text-lg">O catálogo ainda está sendo carregado. Volte em alguns minutos.</p>
-        <Link href="/catalogo" className="mt-4 inline-block text-accent underline">
+        <Link href="/catalogo" className="mt-4 inline-block text-fg underline hover:text-accent">
           Ver o catálogo
         </Link>
       </main>
