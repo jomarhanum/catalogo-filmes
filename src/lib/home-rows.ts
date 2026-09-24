@@ -17,7 +17,7 @@ export const HOME_ROWS: HomeRow[] = [
   { id: 'netflix', title: 'Na Netflix', filters: subscription(8) },
   { id: 'prime-video', title: 'No Prime Video', filters: subscription(119) },
   { id: 'disney-plus', title: 'No Disney+', filters: subscription(337) },
-  { id: 'max', title: 'Na Max', filters: subscription(1899) },
+  { id: 'max', title: 'Na HBO Max', filters: subscription(1899) },
   { id: 'acao', title: 'Ação', filters: filters({ genres: [28] }) },
   { id: 'comedia', title: 'Comédia', filters: filters({ genres: [35] }) },
   { id: 'terror', title: 'Terror', filters: filters({ genres: [27] }) },

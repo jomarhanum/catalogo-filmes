@@ -14,7 +14,7 @@ describe('HOME_ROWS', () => {
       'Na Netflix',
       'No Prime Video',
       'No Disney+',
-      'Na Max',
+      'Na HBO Max',
       'Ação',
       'Comédia',
       'Terror',
