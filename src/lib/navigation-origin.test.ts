@@ -4,6 +4,7 @@ import {
   filmOpenedFromSite,
   isPlainLeftClick,
   markFilmOpenedFromSite,
+  takeFilmOpenedFromSite,
 } from './navigation-origin';
 
 function memoryStorage() {
@@ -31,6 +32,18 @@ describe('navigation-origin', () => {
   it('sem sessionStorage não quebra', () => {
     vi.stubGlobal('sessionStorage', undefined);
     expect(() => markFilmOpenedFromSite('/filme/1')).not.toThrow();
+    expect(filmOpenedFromSite('/filme/1')).toBe(false);
+  });
+
+  it('takeFilmOpenedFromSite lê e sempre limpa a marca', () => {
+    markFilmOpenedFromSite('/filme/1');
+    expect(takeFilmOpenedFromSite('/filme/1')).toBe(true);
+    expect(takeFilmOpenedFromSite('/filme/1')).toBe(false);
+  });
+
+  it('takeFilmOpenedFromSite com caminho diferente retorna falso e limpa a marca', () => {
+    markFilmOpenedFromSite('/filme/1');
+    expect(takeFilmOpenedFromSite('/filme/2')).toBe(false);
     expect(filmOpenedFromSite('/filme/1')).toBe(false);
   });
 

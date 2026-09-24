@@ -26,6 +26,21 @@ export function clearFilmOpenedFromSite(): void {
   }
 }
 
+/**
+ * Lê e sempre limpa a marca (evita que ela fique "presa": se a pessoa sair da página do filme sem
+ * clicar em "Voltar" — ex. botão nativo do navegador — a marca não seria limpa e poderia fazer um
+ * "Voltar" futuro, num filme aberto por link direto, sequestrar o histórico indevidamente).
+ */
+export function takeFilmOpenedFromSite(path: string): boolean {
+  try {
+    const matches = sessionStorage.getItem(KEY) === path;
+    sessionStorage.removeItem(KEY);
+    return matches;
+  } catch {
+    return false;
+  }
+}
+
 interface ClickLike {
   button: number;
   metaKey: boolean;

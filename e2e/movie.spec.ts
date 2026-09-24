@@ -54,6 +54,18 @@ test('filme aberto por link de fora: voltar vai para a vitrine sem sair do site'
   await expect(page.getByRole('heading', { level: 2, name: 'Em alta agora' })).toBeVisible();
 });
 
+test('marca de "aberto pelo site" não fica presa após sair pelo botão nativo do navegador', async ({ page }) => {
+  await page.goto('/catalogo');
+  await page.getByTestId('movie-card').filter({ hasText: 'Corra!' }).click();
+  await expect(page).toHaveURL('/filme/1');
+  await page.goBack();
+  await expect(page).toHaveURL('/catalogo');
+
+  await page.goto('/filme/1');
+  await page.getByRole('link', { name: 'Voltar', exact: true }).click();
+  await expect(page).toHaveURL('/');
+});
+
 test('no celular o pôster fica acima das informações', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 800 });
   await page.goto('/filme/1');
