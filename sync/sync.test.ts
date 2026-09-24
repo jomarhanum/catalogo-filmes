@@ -63,6 +63,41 @@ describe('runSync', () => {
     expect(repo.movies.has(2)).toBe(true);
   });
 
+  function trackDiscoverConcurrency(client: FakeTmdb, delayMs = 5) {
+    let inFlight = 0;
+    let peak = 0;
+    const original = client.discover.bind(client);
+    client.discover = async (params) => {
+      inFlight++;
+      peak = Math.max(peak, inFlight);
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+      try {
+        return await original(params);
+      } finally {
+        inFlight--;
+      }
+    };
+    return () => peak;
+  }
+
+  it('varre vários streamings em paralelo (concorrência padrão)', async () => {
+    const peak = trackDiscoverConcurrency(tmdb);
+
+    await runSync({ tmdb, repo, now: at(0) });
+
+    expect(peak()).toBeGreaterThan(1);
+    expect(peak()).toBeLessThanOrEqual(8);
+  });
+
+  it('respeita o limite de scanConcurrency informado', async () => {
+    const peak = trackDiscoverConcurrency(tmdb);
+
+    await runSync({ tmdb, repo, now: at(0), scanConcurrency: 8 });
+
+    expect(peak()).toBeGreaterThan(1);
+    expect(peak()).toBeLessThanOrEqual(8);
+  });
+
   it('falha no meio não apaga nenhuma ligação', async () => {
     tmdb.catalog.set('8:flatrate', [tmdbMovie(1), tmdbMovie(2)]);
     await runSync({ tmdb, repo, now: at(0) });

@@ -26,6 +26,7 @@ export interface SyncDeps {
   now?: () => Date;
   log?: (msg: string) => void;
   detailsConcurrency?: number;
+  scanConcurrency?: number;
 }
 
 function toProviderRow(p: TmdbProvider): ProviderRow {
@@ -70,15 +71,17 @@ export async function runSync(deps: SyncDeps): Promise<SyncSummary> {
 
   // 2. Varredura
   const seen = new Set<number>();
-  for (const provider of providers) {
-    for (const accessType of ACCESS_TYPES) {
-      await scanDiscover(
-        tmdb,
-        { providerId: provider.provider_id, accessType },
-        async (pageMovies) => {
-          const movies = [...new Map(pageMovies.map((m) => [m.id, m])).values()];
-          if (movies.length === 0) return;
-
+  const scanPairs = providers.flatMap((provider) =>
+    ACCESS_TYPES.map((accessType) => ({ provider, accessType })),
+  );
+  let pagesScanned = 0;
+  await mapWithConcurrency(scanPairs, deps.scanConcurrency ?? 8, async ({ provider, accessType }) => {
+    await scanDiscover(
+      tmdb,
+      { providerId: provider.provider_id, accessType },
+      async (pageMovies) => {
+        const movies = [...new Map(pageMovies.map((m) => [m.id, m])).values()];
+        if (movies.length > 0) {
           const existing = await repo.existingMovieIds(movies.map((m) => m.id));
           for (const m of movies) {
             if (seen.has(m.id)) continue;
@@ -88,26 +91,40 @@ export async function runSync(deps: SyncDeps): Promise<SyncSummary> {
           }
 
           await repo.upsertMovies(movies.map(toMovieRow));
-          await repo.upsertMovieGenres(
-            movies.flatMap((m) =>
-              m.genre_ids.filter((g) => knownGenres.has(g)).map((genreId) => ({ movie_id: m.id, genre_id: genreId })),
+          await Promise.all([
+            repo.upsertMovieGenres(
+              movies.flatMap((m) =>
+                m.genre_ids.filter((g) => knownGenres.has(g)).map((genreId) => ({ movie_id: m.id, genre_id: genreId })),
+              ),
             ),
-          );
-          await repo.touchMovieProviders(
-            movies.map((m) => ({ movie_id: m.id, provider_id: provider.provider_id, access_type: accessType })),
-            runStartedAt,
-          );
-        },
-        { log },
-      );
-    }
-  }
+            repo.touchMovieProviders(
+              movies.map((m) => ({ movie_id: m.id, provider_id: provider.provider_id, access_type: accessType })),
+              runStartedAt,
+            ),
+          ]);
+        }
+
+        pagesScanned++;
+        if (pagesScanned % 500 === 0) {
+          log(`varredura: ${pagesScanned} páginas, ${summary.added} filmes novos, ${summary.updated} atualizados`);
+        }
+      },
+      { log },
+    );
+  });
   log(`varredura: ${summary.added} novos, ${summary.updated} atualizados`);
 
   // 3. Detalhes
   const staleBefore = new Date(now.getTime() - DETAILS_MAX_AGE_MS).toISOString();
   const needingDetails = await repo.listMoviesNeedingDetails(staleBefore);
-  await mapWithConcurrency(needingDetails, deps.detailsConcurrency ?? 10, async (id) => {
+  let detailsProcessed = 0;
+  const reportDetailsProgress = () => {
+    detailsProcessed++;
+    if (detailsProcessed % 2000 === 0) {
+      log(`detalhes: ${detailsProcessed} de ${needingDetails.length}`);
+    }
+  };
+  await mapWithConcurrency(needingDetails, deps.detailsConcurrency ?? 20, async (id) => {
     try {
       const details = await tmdb.getDetails(id);
       await repo.updateMovieDetails(id, {
@@ -124,6 +141,8 @@ export async function runSync(deps: SyncDeps): Promise<SyncSummary> {
         return;
       }
       throw error;
+    } finally {
+      reportDetailsProgress();
     }
   });
 
