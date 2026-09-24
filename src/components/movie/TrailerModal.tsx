@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 interface Props {
   trailerKey: string;
@@ -42,34 +43,39 @@ export function TrailerModal({
       >
         <span aria-hidden="true">▶</span> {triggerLabel}
       </button>
-      {open && (
-        <div
-          ref={dialogRef}
-          role="dialog"
-          aria-modal="true"
-          aria-label={`Trailer de ${title}`}
-          tabIndex={-1}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 outline-none"
-          onClick={() => setOpen(false)}
-        >
-          <div className="w-full max-w-4xl" onClick={(e) => e.stopPropagation()}>
-            <div className="mb-2 text-right">
-              <button type="button" onClick={() => setOpen(false)} className="text-sm underline">
-                Fechar ✕
-              </button>
+      {/* O diálogo vai direto para o <body>: quem usa o botão pode estar dentro de uma camada
+          isolada (o destaque da vitrine usa `isolate`), e aí o `fixed z-50` ficaria preso nela,
+          abaixo das fileiras e do topo fixo. */}
+      {open &&
+        createPortal(
+          <div
+            ref={dialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Trailer de ${title}`}
+            tabIndex={-1}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 outline-none"
+            onClick={() => setOpen(false)}
+          >
+            <div className="w-full max-w-4xl" onClick={(e) => e.stopPropagation()}>
+              <div className="mb-2 text-right">
+                <button type="button" onClick={() => setOpen(false)} className="text-sm underline">
+                  Fechar ✕
+                </button>
+              </div>
+              <div className="aspect-video">
+                <iframe
+                  className="h-full w-full rounded-lg"
+                  src={`https://www.youtube-nocookie.com/embed/${encodeURIComponent(trailerKey)}?autoplay=1`}
+                  title={`Trailer de ${title}`}
+                  allow="autoplay; encrypted-media; picture-in-picture"
+                  allowFullScreen
+                />
+              </div>
             </div>
-            <div className="aspect-video">
-              <iframe
-                className="h-full w-full rounded-lg"
-                src={`https://www.youtube-nocookie.com/embed/${encodeURIComponent(trailerKey)}?autoplay=1`}
-                title={`Trailer de ${title}`}
-                allow="autoplay; encrypted-media; picture-in-picture"
-                allowFullScreen
-              />
-            </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body,
+        )}
     </>
   );
 }
