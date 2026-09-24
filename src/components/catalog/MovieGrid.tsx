@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useTransition, type MouseEvent } from 'react';
-import { loadMoreMovies } from '@/app/actions';
+import { loadMoreMovies, loadMoreSearch } from '@/app/actions';
 import type { MovieCardData } from '@/lib/queries/types';
 import {
   loadCatalogState,
@@ -17,23 +17,26 @@ interface Props {
   initialMovies: MovieCardData[];
   total: number;
   query: string;
+  kind?: 'catalog' | 'search';
 }
 
-export function MovieGrid({ initialMovies, total, query }: Props) {
+export function MovieGrid({ initialMovies, total, query, kind = 'catalog' }: Props) {
   const [movies, setMovies] = useState(initialMovies);
   const [failed, setFailed] = useState(false);
   const [pending, startTransition] = useTransition();
   // Rolagem a restaurar; aplicada num efeito depois do commit que já tem a lista restaurada.
   const [restoreScrollY, setRestoreScrollY] = useState<number | null>(null);
 
+  const isCatalog = kind === 'catalog';
+
   useEffect(() => {
-    saveQuery(query);
-  }, [query]);
+    if (isCatalog) saveQuery(query);
+  }, [isCatalog, query]);
 
   // Voltando de um filme aberto por aqui: recupera os blocos já carregados e a rolagem.
   // Roda depois da hidratação para o primeiro render bater com o HTML do servidor.
   useEffect(() => {
-    if (!takeReturnFromFilm()) return;
+    if (!isCatalog || !takeReturnFromFilm()) return;
     const stored = loadCatalogState();
     const restored = restorableMovies(stored, query, initialMovies);
     if (!stored || !restored) return;
@@ -41,7 +44,7 @@ export function MovieGrid({ initialMovies, total, query }: Props) {
     setMovies(restored);
     setRestoreScrollY(stored.scrollY);
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [query, initialMovies]);
+  }, [isCatalog, query, initialMovies]);
 
   useEffect(() => {
     if (restoreScrollY !== null) window.scrollTo(0, restoreScrollY);
@@ -50,12 +53,12 @@ export function MovieGrid({ initialMovies, total, query }: Props) {
   const loadMore = () =>
     startTransition(async () => {
       try {
-        const next = await loadMoreMovies(query, movies.length);
+        const next = isCatalog ? await loadMoreMovies(query, movies.length) : await loadMoreSearch(query, movies.length);
         // O catálogo pode ter mudado entre um bloco e outro; evita cards repetidos.
         const seen = new Set(movies.map((m) => m.id));
         const merged = [...movies, ...next.filter((m) => !seen.has(m.id))];
         setMovies(merged);
-        saveCatalogState({ query, movies: merged, scrollY: window.scrollY });
+        if (isCatalog) saveCatalogState({ query, movies: merged, scrollY: window.scrollY });
         setFailed(false);
       } catch {
         setFailed(true);
@@ -64,6 +67,7 @@ export function MovieGrid({ initialMovies, total, query }: Props) {
 
   // Clique simples num card: guarda lista e rolagem para o "voltar" e marca a origem do filme.
   const rememberPosition = (e: MouseEvent<HTMLDivElement>) => {
+    if (!isCatalog) return;
     if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     const card = (e.target as Element).closest<HTMLAnchorElement>('a[data-testid="movie-card"]');
     if (!card) return;

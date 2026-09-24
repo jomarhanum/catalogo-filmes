@@ -7,6 +7,7 @@ import {
   parseFilters,
   parseMovieId,
   parseOffset,
+  parseSearchQuery,
   toggle,
 } from './filters';
 
@@ -146,5 +147,22 @@ describe('catalogRedirectTarget', () => {
 
   it('parâmetro do catálogo só com valores inválidos vai para /catalogo limpo', () => {
     expect(catalogRedirectTarget({ nota: 'abc' })).toBe('/catalogo');
+  });
+});
+
+describe('parseSearchQuery', () => {
+  it('remove espaços nas pontas', () => {
+    expect(parseSearchQuery('  corra  ')).toBe('corra');
+  });
+  it('menos de 2 caracteres, vazio ou ausente é sem busca', () => {
+    expect(parseSearchQuery('a')).toBeNull();
+    expect(parseSearchQuery('   ')).toBeNull();
+    expect(parseSearchQuery(undefined)).toBeNull();
+  });
+  it('usa só o primeiro valor quando repetido', () => {
+    expect(parseSearchQuery(['nós', 'x'])).toBe('nós');
+  });
+  it('corta em 100 caracteres', () => {
+    expect(parseSearchQuery('x'.repeat(500))).toHaveLength(100);
   });
 });

@@ -150,3 +150,11 @@ export function catalogRedirectTarget(raw: RawSearchParams): string | null {
   const query = filtersToQuery(parseFilters(raw));
   return query ? `/catalogo?${query}` : '/catalogo';
 }
+
+/** Termo de busca: sem espaços nas pontas, até 100 caracteres, mínimo 2. */
+export function parseSearchQuery(value: string | string[] | undefined): string | null {
+  const first = Array.isArray(value) ? value[0] : value;
+  if (typeof first !== 'string') return null;
+  const term = first.trim().slice(0, 100).trim();
+  return term.length >= 2 ? term : null;
+}
