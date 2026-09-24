@@ -25,7 +25,7 @@ test('vitrine mostra o destaque e as fileiras com filmes', async ({ page }) => {
     'Em alta agora',
     'Na Netflix',
     'No Disney+',
-    'Na Max',
+    'Na HBO Max',
     'Ação',
     'Terror',
     'Drama',
