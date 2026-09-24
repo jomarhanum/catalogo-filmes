@@ -42,6 +42,29 @@ test('assistir trailer abre o vídeo por cima da página', async ({ page }) => {
   await expect(page.locator('iframe')).toHaveCount(0);
 });
 
+// O diálogo nasce dentro do destaque, que é uma camada isolada; as fileiras (z-10) e o topo fixo
+// não podem ficar por cima dele em nenhum ponto da tela.
+for (const viewport of [
+  { width: 1280, height: 800 },
+  { width: 390, height: 844 },
+]) {
+  test(`o trailer fica por cima das fileiras e do topo (${viewport.width}px)`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Assistir trailer' }).click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    const covered = await page.evaluate(() => {
+      const dialog = document.querySelector('[role="dialog"]');
+      const x = window.innerWidth / 2;
+      return [0.03, 0.5, 0.75, 0.95].map((f) => {
+        const el = document.elementFromPoint(x, window.innerHeight * f);
+        return dialog !== null && el !== null && dialog.contains(el);
+      });
+    });
+    expect(covered).toEqual([true, true, true, true]);
+  });
+}
+
 test('ver detalhes abre a página do filme em destaque', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('region', { name: 'Filme em destaque' }).getByRole('link', { name: 'Ver detalhes' }).click();
