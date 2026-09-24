@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { MovieCard } from '@/components/catalog/MovieCard';
 import type { MovieCardData } from '@/lib/queries/types';
 
@@ -14,13 +14,29 @@ interface Props {
 export function MovieRow({ title, href, movies }: Props) {
   const headingId = useId();
   const stripRef = useRef<HTMLDivElement>(null);
+  const prevRef = useRef<HTMLButtonElement>(null);
+  const nextRef = useRef<HTMLButtonElement>(null);
+  // Seta que deve receber o foco quando a seta focada ficar inativa (fim ou início da fileira).
+  const focusAfterRender = useRef<HTMLButtonElement | null>(null);
   const [edges, setEdges] = useState({ atStart: true, atEnd: true });
 
   const measure = useCallback(() => {
     const el = stripRef.current;
     if (!el) return;
-    setEdges({ atStart: el.scrollLeft <= 4, atEnd: el.scrollLeft + el.clientWidth >= el.scrollWidth - 4 });
+    const next = { atStart: el.scrollLeft <= 4, atEnd: el.scrollLeft + el.clientWidth >= el.scrollWidth - 4 };
+    const focused = document.activeElement;
+    if (next.atEnd && focused === nextRef.current) focusAfterRender.current = prevRef.current;
+    else if (next.atStart && focused === prevRef.current) focusAfterRender.current = nextRef.current;
+    setEdges(next);
   }, []);
+
+  // A seta inativa fica `disabled`; se era ela que tinha o foco, passa o foco para a seta oposta
+  // antes da pintura, para ele nunca cair no <body>.
+  useLayoutEffect(() => {
+    const target = focusAfterRender.current;
+    focusAfterRender.current = null;
+    if (target && !target.disabled) target.focus();
+  }, [edges]);
 
   // O ResizeObserver mede ao começar a observar e sempre que a largura muda.
   useEffect(() => {
@@ -33,7 +49,9 @@ export function MovieRow({ title, href, movies }: Props) {
 
   const scrollByPage = (direction: 1 | -1) => {
     const el = stripRef.current;
-    if (el) el.scrollBy({ left: direction * el.clientWidth * 0.9, behavior: 'smooth' });
+    if (!el) return;
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    el.scrollBy({ left: direction * el.clientWidth * 0.9, behavior: reduceMotion ? 'auto' : 'smooth' });
   };
 
   const arrow =
@@ -52,6 +70,7 @@ export function MovieRow({ title, href, movies }: Props) {
       <div className="relative mt-3">
         <div
           ref={stripRef}
+          data-testid="row-strip"
           onScroll={measure}
           className="no-scrollbar flex snap-x snap-mandatory scroll-px-4 gap-2 overflow-x-auto px-4 pb-2 sm:scroll-px-8 sm:px-8"
         >
@@ -61,26 +80,27 @@ export function MovieRow({ title, href, movies }: Props) {
             </div>
           ))}
         </div>
-        {!edges.atStart && (
-          <button
-            type="button"
-            aria-label={`Rolar ${title} para a esquerda`}
-            onClick={() => scrollByPage(-1)}
-            className={`${arrow} left-0 bg-linear-to-r from-bg to-transparent`}
-          >
-            ‹
-          </button>
-        )}
-        {!edges.atEnd && (
-          <button
-            type="button"
-            aria-label={`Rolar ${title} para a direita`}
-            onClick={() => scrollByPage(1)}
-            className={`${arrow} right-0 bg-linear-to-l from-bg to-transparent`}
-          >
-            ›
-          </button>
-        )}
+        {/* As duas setas ficam sempre montadas; a inativa fica invisível e desabilitada. */}
+        <button
+          ref={prevRef}
+          type="button"
+          aria-label={`Rolar ${title} para a esquerda`}
+          onClick={() => scrollByPage(-1)}
+          disabled={edges.atStart}
+          className={`${arrow} left-0 bg-linear-to-r from-bg to-transparent ${edges.atStart ? 'invisible' : ''}`}
+        >
+          ‹
+        </button>
+        <button
+          ref={nextRef}
+          type="button"
+          aria-label={`Rolar ${title} para a direita`}
+          onClick={() => scrollByPage(1)}
+          disabled={edges.atEnd}
+          className={`${arrow} right-0 bg-linear-to-l from-bg to-transparent ${edges.atEnd ? 'invisible' : ''}`}
+        >
+          ›
+        </button>
       </div>
     </section>
   );

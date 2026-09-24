@@ -15,7 +15,10 @@ test('mostra detalhes, onde assistir e trailer embutido', async ({ page }) => {
 
   await expect(page.locator('iframe')).toHaveCount(0);
   await page.getByRole('button', { name: 'Reproduzir trailer de Corra!' }).click();
-  await expect(page.locator('iframe[src*="youtube-nocookie.com/embed/sRfnevzM9kQ"]')).toBeAttached();
+  const player = page.locator('iframe[src*="youtube-nocookie.com/embed/sRfnevzM9kQ"]');
+  await expect(player).toBeAttached();
+  // O botão focado some; o foco vai para o player em vez de cair no <body>.
+  await expect(player).toBeFocused();
 });
 
 test('filme sem trailer não mostra a seção de trailer', async ({ page }) => {

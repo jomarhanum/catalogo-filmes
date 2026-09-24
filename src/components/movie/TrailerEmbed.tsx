@@ -1,11 +1,17 @@
 'use client';
 
 import Image from 'next/image';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 // Mostra a miniatura do YouTube e só carrega o player quando a pessoa pede.
 export function TrailerEmbed({ trailerKey, title }: { trailerKey: string; title: string }) {
   const [playing, setPlaying] = useState(false);
+  const playerRef = useRef<HTMLIFrameElement>(null);
+
+  // O botão focado some ao reproduzir; o foco vai para o player em vez de cair no <body>.
+  useEffect(() => {
+    if (playing) playerRef.current?.focus();
+  }, [playing]);
   const key = encodeURIComponent(trailerKey);
 
   return (
@@ -19,6 +25,7 @@ export function TrailerEmbed({ trailerKey, title }: { trailerKey: string; title:
       <div className="relative mt-4 aspect-video max-w-3xl overflow-hidden rounded-lg border border-border bg-black">
         {playing ? (
           <iframe
+            ref={playerRef}
             className="h-full w-full"
             src={`https://www.youtube-nocookie.com/embed/${key}?autoplay=1`}
             title={`Trailer de ${title}`}

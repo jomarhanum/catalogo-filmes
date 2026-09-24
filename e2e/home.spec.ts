@@ -59,3 +59,24 @@ test('links antigos com filtros em / continuam indo para o catálogo', async ({ 
   await page.goto('/?streaming=8');
   await expect(page).toHaveURL('/catalogo?streaming=8');
 });
+
+test('setas da fileira não deixam o foco cair no body ao chegar ao fim', async ({ page }) => {
+  await page.goto('/');
+  const row = page.getByRole('region', { name: 'Em alta agora' });
+  const next = row.getByRole('button', { name: 'Rolar Em alta agora para a direita', includeHidden: true });
+  const atEnd = () =>
+    row.evaluate((section) => {
+      const strip = section.querySelector<HTMLElement>('[data-testid="row-strip"]');
+      return !!strip && strip.scrollLeft + strip.clientWidth >= strip.scrollWidth - 4;
+    });
+  expect(await atEnd()).toBe(false);
+
+  await next.focus();
+  for (let i = 0; i < 20 && !(await atEnd()); i++) {
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(700);
+  }
+  expect(await atEnd()).toBe(true);
+  await page.waitForTimeout(300);
+  expect(await page.evaluate(() => document.activeElement?.tagName)).not.toBe('BODY');
+});
