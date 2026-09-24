@@ -9,7 +9,7 @@ describe('getHomeRows', () => {
       'Em alta agora',
       'Na Netflix',
       'No Disney+',
-      'Na Max',
+      'Na HBO Max',
       'Ação',
       'Terror',
       'Drama',

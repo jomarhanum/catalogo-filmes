@@ -95,7 +95,7 @@ Configuradas em `src/lib/home-rows.ts`, nesta ordem:
 | 2 | Na Netflix | `streaming=[8]`, `acesso=[flatrate]` | `/catalogo?streaming=8&acesso=flatrate` |
 | 3 | No Prime Video | `streaming=[119]`, `acesso=[flatrate]` | `/catalogo?streaming=119&acesso=flatrate` |
 | 4 | No Disney+ | `streaming=[337]`, `acesso=[flatrate]` | `/catalogo?streaming=337&acesso=flatrate` |
-| 5 | Na Max | `streaming=[1899]`, `acesso=[flatrate]` | `/catalogo?streaming=1899&acesso=flatrate` |
+| 5 | Na HBO Max | `streaming=[1899]`, `acesso=[flatrate]` | `/catalogo?streaming=1899&acesso=flatrate` |
 | 6 | Ação | `genero=[28]` | `/catalogo?genero=28` |
 | 7 | Comédia | `genero=[35]` | `/catalogo?genero=35` |
 | 8 | Terror | `genero=[27]` | `/catalogo?genero=27` |
@@ -198,7 +198,7 @@ Segue o segundo print do usuário:
   - `searchMovies` com `limit: 20` retorna 20.
 - **Navegador (Playwright):**
   - **Vitrine:**
-    - Com os dados de exemplo, aparecem exatamente as fileiras "Em alta agora", "Na Netflix", "No Disney+", "Na Max", "Ação", "Terror", "Drama" e "Mais bem avaliados".
+    - Com os dados de exemplo, aparecem exatamente as fileiras "Em alta agora", "Na Netflix", "No Disney+", "Na HBO Max", "Ação", "Terror", "Drama" e "Mais bem avaliados".
     - "No Prime Video", "Comédia" e "Animação" não têm filmes nos dados de exemplo e não aparecem.
     - "Ver todos" de "Na Netflix" abre `/catalogo?streaming=8&acesso=flatrate` com 3 filmes.
   - `/?streaming=8` redireciona para `/catalogo?streaming=8`.
