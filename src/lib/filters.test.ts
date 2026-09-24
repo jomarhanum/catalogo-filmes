@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_FILTERS,
+  catalogRedirectTarget,
   countExtraFilters,
   filtersToQuery,
   parseFilters,
@@ -129,5 +130,21 @@ describe('parseMovieId', () => {
     expect(parseMovieId('5.5')).toBeNull();
     expect(parseMovieId('')).toBeNull();
     expect(parseMovieId('12345678901')).toBeNull();
+  });
+});
+
+describe('catalogRedirectTarget', () => {
+  it('sem parâmetros do catálogo não redireciona', () => {
+    expect(catalogRedirectTarget({})).toBeNull();
+    expect(catalogRedirectTarget({ q: 'corra', utm_source: 'x' })).toBeNull();
+  });
+
+  it('leva os filtros válidos para /catalogo', () => {
+    expect(catalogRedirectTarget({ streaming: '8' })).toBe('/catalogo?streaming=8');
+    expect(catalogRedirectTarget({ streaming: '8,abc', genero: '27', x: '1' })).toBe('/catalogo?streaming=8&genero=27');
+  });
+
+  it('parâmetro do catálogo só com valores inválidos vai para /catalogo limpo', () => {
+    expect(catalogRedirectTarget({ nota: 'abc' })).toBe('/catalogo');
   });
 });

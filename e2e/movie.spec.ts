@@ -30,15 +30,15 @@ test('filme fora de streaming e id inválido mostram não encontrado', async ({ 
 });
 
 test('voltar ao catálogo mantém os filtros', async ({ page }) => {
-  await page.goto('/?streaming=8');
+  await page.goto('/catalogo?streaming=8');
   await page.getByTestId('movie-card').filter({ hasText: 'Corra!' }).click();
   await expect(page).toHaveURL('/filme/1');
   await page.getByRole('link', { name: '← Voltar ao catálogo' }).click();
-  await expect(page).toHaveURL('/?streaming=8');
+  await expect(page).toHaveURL('/catalogo?streaming=8');
 });
 
 async function openFilmFromSecondBlock(page: Page) {
-  await page.goto('/');
+  await page.goto('/catalogo');
   const cards = page.getByTestId('movie-card');
   await expect(cards).toHaveCount(24);
   await page.getByRole('button', { name: 'Carregar mais' }).click();
@@ -53,7 +53,7 @@ async function openFilmFromSecondBlock(page: Page) {
 }
 
 async function expectCatalogRestored(page: Page, href: string) {
-  await expect(page).toHaveURL('/');
+  await expect(page).toHaveURL('/catalogo');
   const cards = page.getByTestId('movie-card');
   await expect(cards).toHaveCount(38);
   await expect(page.locator(`a[data-testid="movie-card"][href="${href}"]`)).toBeInViewport();

@@ -131,3 +131,22 @@ export function parseOffset(value: unknown): number {
 export function parseMovieId(value: string): number | null {
   return /^\d{1,9}$/.test(value) ? Number(value) : null;
 }
+
+export const CATALOG_PARAM_KEYS = [
+  'streaming',
+  'acesso',
+  'genero',
+  'ano_min',
+  'ano_max',
+  'nota',
+  'duracao_max',
+  'idioma',
+  'ordem',
+] as const;
+
+/** Links antigos do catálogo apontavam para `/?...`; devolve o novo endereço ou null se não há filtros. */
+export function catalogRedirectTarget(raw: RawSearchParams): string | null {
+  if (!CATALOG_PARAM_KEYS.some((key) => raw[key] !== undefined)) return null;
+  const query = filtersToQuery(parseFilters(raw));
+  return query ? `/catalogo?${query}` : '/catalogo';
+}

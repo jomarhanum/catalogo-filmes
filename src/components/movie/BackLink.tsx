@@ -8,7 +8,7 @@ export function BackLink() {
   const router = useRouter();
   return (
     <Link
-      href="/"
+      href="/catalogo"
       onClick={(e) => {
         // Veio de um card do catálogo nesta aba: volta pelo histórico (mantém filtros, blocos e rolagem).
         if (filmOpenedFromCatalog(window.location.pathname)) {
@@ -19,7 +19,7 @@ export function BackLink() {
         const query = savedQuery();
         if (query) {
           e.preventDefault();
-          router.push(`/?${query}`);
+          router.push(`/catalogo?${query}`);
         }
       }}
       className="text-sm text-muted hover:text-fg"
