@@ -80,7 +80,12 @@ export async function runSync(deps: SyncDeps): Promise<SyncSummary> {
       tmdb,
       { providerId: provider.provider_id, accessType },
       async (pageMovies) => {
-        const movies = [...new Map(pageMovies.map((m) => [m.id, m])).values()];
+        // Ordenado por id: duas varreduras concorrentes podem tentar upsertar o mesmo filme
+        // popular (presente em vários streamings) ao mesmo tempo. Se cada uma gravasse na ordem
+        // de popularidade da sua própria página, os `INSERT ... ON CONFLICT DO UPDATE` travariam
+        // as linhas em ordens diferentes e o Postgres poderia detectar deadlock e abortar um dos
+        // dois (sem retry aqui). Uma ordem determinística (por id) evita esse cenário.
+        const movies = [...new Map(pageMovies.map((m) => [m.id, m])).values()].sort((a, b) => a.id - b.id);
         if (movies.length > 0) {
           const existing = await repo.existingMovieIds(movies.map((m) => m.id));
           for (const m of movies) {
@@ -93,9 +98,11 @@ export async function runSync(deps: SyncDeps): Promise<SyncSummary> {
           await repo.upsertMovies(movies.map(toMovieRow));
           await Promise.all([
             repo.upsertMovieGenres(
-              movies.flatMap((m) =>
-                m.genre_ids.filter((g) => knownGenres.has(g)).map((genreId) => ({ movie_id: m.id, genre_id: genreId })),
-              ),
+              movies
+                .flatMap((m) =>
+                  m.genre_ids.filter((g) => knownGenres.has(g)).map((genreId) => ({ movie_id: m.id, genre_id: genreId })),
+                )
+                .sort((a, b) => a.movie_id - b.movie_id || a.genre_id - b.genre_id),
             ),
             repo.touchMovieProviders(
               movies.map((m) => ({ movie_id: m.id, provider_id: provider.provider_id, access_type: accessType })),

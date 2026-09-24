@@ -98,6 +98,20 @@ describe('runSync', () => {
     expect(peak()).toBeLessThanOrEqual(8);
   });
 
+  it('grava filmes em ordem de id, mesmo que a página do TMDB não esteja ordenada', async () => {
+    tmdb.catalog.set('8:flatrate', [tmdbMovie(30), tmdbMovie(10), tmdbMovie(20)]);
+    const receivedIds: number[][] = [];
+    const originalUpsertMovies = repo.upsertMovies.bind(repo);
+    repo.upsertMovies = async (rows) => {
+      receivedIds.push(rows.map((r) => r.id));
+      return originalUpsertMovies(rows);
+    };
+
+    await runSync({ tmdb, repo, now: at(0) });
+
+    expect(receivedIds).toEqual([[10, 20, 30]]);
+  });
+
   it('falha no meio não apaga nenhuma ligação', async () => {
     tmdb.catalog.set('8:flatrate', [tmdbMovie(1), tmdbMovie(2)]);
     await runSync({ tmdb, repo, now: at(0) });
